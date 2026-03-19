@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Split the skill documentation into a coding-agent path (`skills/md2wechat/`) and an OpenClaw path (`platforms/openclaw/md2wechat/`).
+- Updated the OpenClaw guides to describe skill-package-plus-runtime installation as the primary path, without relying on `run.sh` runtime downloads.
+- Reworked the documentation index and architecture notes so platform adaptation is treated as a first-class layer.
+
 ## [1.11.1] - 2026-03-19
 
 ### Changed

@@ -935,7 +935,7 @@ ln -s /path/to/md2wechat-skill/skills/md2wechat ~/.claude/skills/md2wechat
 md2wechat-skill/
 ├── .claude-plugin/        # 插件清单
 │   └── marketplace.json   # Plugin Marketplace 配置
-├── skills/                # 技能目录（Claude Code / OpenClaw 通用）
+├── skills/                # coding-agent skill 目录（Claude Code / Codex / OpenCode）
 │   └── md2wechat/
 │       ├── SKILL.md       # 技能定义
 │       ├── references/    # 参考文档
@@ -944,7 +944,14 @@ md2wechat-skill/
 │       │   ├── image-syntax.md # 图片语法
 │       │   └── wechat-api.md  # API 参考
 │       └── scripts/       # 执行脚本
-│           └── run.sh     # 智能二进制下载器
+│           └── run.sh     # 技能启动入口
+├── platforms/             # 平台适配层
+│   └── openclaw/
+│       └── md2wechat/     # OpenClaw 专用 skill 包
+│           ├── SKILL.md
+│           ├── references/
+│           └── scripts/
+│               └── run.sh  # OpenClaw 启动入口
 ├── scripts/               # 安装脚本
 │   ├── install.sh         # CLI 安装脚本
 │   └── install-openclaw.sh # OpenClaw 安装脚本
@@ -959,6 +966,8 @@ md2wechat-skill/
 ## 🦞 OpenClaw 支持
 
 md2wechat 现已支持 [OpenClaw](https://openclaw.ai/) 平台！
+
+OpenClaw 使用独立的 `platforms/openclaw/md2wechat/` skill 包，和面向 Claude Code / Codex / OpenCode 的 `skills/md2wechat/` 分开维护。OpenClaw 安装主线是 skill 包与 runtime 一起安装，`run.sh` 只负责启动已安装 runtime，不再承担首跑动态下载。
 
 ### 什么是 OpenClaw？
 
@@ -975,9 +984,11 @@ md2wechat 现已支持 [OpenClaw](https://openclaw.ai/) 平台！
 npm install -g clawhub
 clawhub login
 
-# 安装 md2wechat 技能
+# 安装 OpenClaw 专用 md2wechat skill 包
 clawhub install md2wechat
 ```
+
+当前 ClawHub 路径会暴露结构化安装资源；完整、可验证的安装主线仍建议使用下一种固定版本 installer。
 
 #### 方式二：一键脚本安装
 
@@ -986,19 +997,26 @@ export MD2WECHAT_RELEASE_BASE_URL=https://github.com/geekjourneyx/md2wechat-skil
 curl -fsSL "${MD2WECHAT_RELEASE_BASE_URL}/install-openclaw.sh" | bash
 ```
 
-脚本会下载同一版本的 `md2wechat-openclaw-skill.tar.gz` 并校验 `checksums.txt`。
+脚本会按固定版本安装 OpenClaw skill 包与 runtime，并校验 `checksums.txt`。这是当前最完整、最可验证的 OpenClaw 安装路径。
 
 #### 方式三：手动安装
 
 ```bash
-VERSION=v1.11.1
+VERSION=1.11.1
+# 按你的平台选择对应二进制，这里以 Linux amd64 为例
 curl -LO https://github.com/geekjourneyx/md2wechat-skill/releases/download/v${VERSION}/md2wechat-openclaw-skill.tar.gz
+curl -LO https://github.com/geekjourneyx/md2wechat-skill/releases/download/v${VERSION}/md2wechat-linux-amd64
 curl -LO https://github.com/geekjourneyx/md2wechat-skill/releases/download/v${VERSION}/checksums.txt
 sha256sum -c checksums.txt --ignore-missing
 mkdir -p ~/.openclaw/skills
-tar -xzf md2wechat-openclaw-skill.tar.gz -C /tmp
-cp -r /tmp/skills/md2wechat ~/.openclaw/skills/
+mkdir -p ~/.openclaw/tools/md2wechat
+mkdir -p /tmp/md2wechat-openclaw
+tar -xzf md2wechat-openclaw-skill.tar.gz -C /tmp/md2wechat-openclaw
+cp -r /tmp/md2wechat-openclaw/skills/md2wechat ~/.openclaw/skills/
+install -m 0755 md2wechat-linux-amd64 ~/.openclaw/tools/md2wechat/md2wechat
 ```
+
+手动安装时，请以同一版本 release 提供的 OpenClaw 资产为准，确保 skill 包与 runtime 同步安装到 OpenClaw 管理目录，不要依赖 `run.sh` 首次运行再下载。
 
 ### 配置
 
@@ -1025,8 +1043,9 @@ cp -r /tmp/skills/md2wechat ~/.openclaw/skills/
 | 方面 | Claude Code | OpenClaw |
 |------|-------------|----------|
 | **定位** | 终端 AI 编程助手 | 聊天应用 AI 助手 |
+| **仓库内 skill 路径** | `skills/md2wechat/` | `platforms/openclaw/md2wechat/` |
 | **技能目录** | `~/.claude/skills/` | `~/.openclaw/skills/` |
-| **安装方式** | `/plugin` 命令 | `clawhub` CLI |
+| **安装方式** | `/plugin` 命令 | `clawhub` CLI / OpenClaw installer |
 | **配置方式** | 环境变量 | `openclaw.json` |
 | **LLM 支持** | Claude | Claude、GPT、DeepSeek 等 |
 
@@ -1358,7 +1377,7 @@ EOF
 | [图片服务配置](docs/IMAGE_PROVISIONERS.md) | AI 图片生成服务完整配置指南 |
 | [写作功能指南](writers/README.md) | 如何使用和自定义写作风格 |
 | [写作功能问答](docs/WRITING_FAQ.md) | 写作小白完整指南 |
-| [AI 去痕指南](skills/md2wechat/references/humanizer.md) | AI 写作去痕完整指南 |
+| [AI 去痕指南](docs/WRITING_FAQ.md) | AI 写作去痕完整指南 |
 | [常见问题](docs/FAQ.md) | 20+ 常见问题解答 |
 | [故障排查](docs/TROUBLESHOOTING.md) | 遇到问题看这里 |
 

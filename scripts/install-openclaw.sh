@@ -14,26 +14,51 @@ VERSION="${MD2WECHAT_VERSION:-}"
 if [[ -z "$VERSION" ]]; then
     if [[ -n "${MD2WECHAT_VERSION_DEFAULT:-}" ]]; then
         VERSION="${MD2WECHAT_VERSION_DEFAULT}"
-    else
-        VERSION="latest"
     fi
 fi
 RELEASE_BASE_URL="${MD2WECHAT_RELEASE_BASE_URL:-}"
 SKILL_NAME="md2wechat"
 SKILL_ARCHIVE="md2wechat-openclaw-skill.tar.gz"
 INSTALL_DIR="${MD2WECHAT_OPENCLAW_INSTALL_DIR:-${HOME}/.openclaw/skills/${SKILL_NAME}}"
+RUNTIME_DIR="${MD2WECHAT_OPENCLAW_RUNTIME_DIR:-${HOME}/.openclaw/tools/${SKILL_NAME}}"
 NON_INTERACTIVE="${MD2WECHAT_NONINTERACTIVE:-}"
 
 if [[ -z "$RELEASE_BASE_URL" ]]; then
-    if [[ "$VERSION" == "latest" ]]; then
-        RELEASE_BASE_URL="https://github.com/${REPO}/releases/latest/download"
-    else
-        RELEASE_BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
-    fi
+    [[ -n "$VERSION" ]] || error "必须提供 MD2WECHAT_VERSION 或使用固定版本 release 安装器 / MD2WECHAT_VERSION is required unless a fixed-version installer injected it"
+    RELEASE_BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 fi
 
 CHECKSUMS_URL="${RELEASE_BASE_URL}/checksums.txt"
 ARCHIVE_URL="${RELEASE_BASE_URL}/${SKILL_ARCHIVE}"
+
+detect_binary() {
+    local os arch
+    os="$(uname -s)"
+    arch="$(uname -m)"
+
+    if [[ "$os" == "Darwin" ]]; then
+        if [[ "$arch" == "arm64" ]]; then
+            printf 'md2wechat-darwin-arm64\n'
+        else
+            printf 'md2wechat-darwin-amd64\n'
+        fi
+        return 0
+    fi
+
+    if [[ "$os" == "Linux" ]]; then
+        if [[ "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
+            printf 'md2wechat-linux-arm64\n'
+        else
+            printf 'md2wechat-linux-amd64\n'
+        fi
+        return 0
+    fi
+
+    error "不支持的系统 / Unsupported platform: ${os} ${arch}"
+}
+
+RUNTIME_BINARY="$(detect_binary)"
+RUNTIME_URL="${RELEASE_BASE_URL}/${RUNTIME_BINARY}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -127,6 +152,14 @@ if [[ -d "$INSTALL_DIR" ]]; then
     rm -rf "$INSTALL_DIR"
 fi
 
+if [[ -d "$RUNTIME_DIR" ]]; then
+    warn "已存在运行时 / Existing runtime: $RUNTIME_DIR"
+    if ! confirm_or_continue "覆盖运行时？/ Overwrite runtime?"; then
+        exit 0
+    fi
+    rm -rf "$RUNTIME_DIR"
+fi
+
 TMP_DIR="$(mktemp -d)"
 cleanup() {
     rm -rf "$TMP_DIR"
@@ -134,21 +167,28 @@ cleanup() {
 trap cleanup EXIT
 
 ARCHIVE_PATH="${TMP_DIR}/${SKILL_ARCHIVE}"
+RUNTIME_PATH="${TMP_DIR}/${RUNTIME_BINARY}"
 CHECKSUMS_FILE="${TMP_DIR}/checksums.txt"
 
 info "下载技能文件 / Downloading release assets..."
 info "技能包 / Skill bundle: ${ARCHIVE_URL}"
+info "运行时 / Runtime: ${RUNTIME_URL}"
 info "校验文件 / Checksums: ${CHECKSUMS_URL}"
 
 download_file "$ARCHIVE_URL" "$ARCHIVE_PATH"
+download_file "$RUNTIME_URL" "$RUNTIME_PATH"
 download_file "$CHECKSUMS_URL" "$CHECKSUMS_FILE"
 
 info "正在验证 SHA-256 校验值 / Verifying SHA-256 checksum..."
 if ! verify_checksum "$CHECKSUMS_FILE" "$ARCHIVE_PATH" "$SKILL_ARCHIVE"; then
     error "校验失败：下载文件与发布校验值不匹配 / Checksum verification failed"
 fi
+if ! verify_checksum "$CHECKSUMS_FILE" "$RUNTIME_PATH" "$RUNTIME_BINARY"; then
+    error "运行时校验失败：下载文件与发布校验值不匹配 / Runtime checksum verification failed"
+fi
 
 mkdir -p "$INSTALL_DIR"
+mkdir -p "$RUNTIME_DIR"
 tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
 
 EXTRACTED_DIR="${TMP_DIR}/skills/md2wechat"
@@ -156,6 +196,7 @@ EXTRACTED_DIR="${TMP_DIR}/skills/md2wechat"
 
 cp -r "${EXTRACTED_DIR}/"* "$INSTALL_DIR/"
 chmod +x "${INSTALL_DIR}/scripts/"*.sh 2>/dev/null || true
+install -m 0755 "$RUNTIME_PATH" "${RUNTIME_DIR}/md2wechat"
 
 success "安装完成 / Installation complete!"
 
@@ -211,9 +252,11 @@ printf "\n"
 printf "${YELLOW}注意 / Note:${NC}\n"
 printf "  • WECHAT_APPID/SECRET 仅草稿上传需要，预览转换可不配置\n"
 printf "  • 图片生成需额外配置 IMAGE_API_KEY\n"
+printf "  • OpenClaw 安装器会一并安装并校验 md2wechat runtime\n"
 printf "  • 推荐始终使用固定版本 release 资产，不要使用 main/raw 作为安装入口\n"
 printf "\n"
 printf "安装路径 / Installed to: ${GREEN}%s${NC}\n" "$INSTALL_DIR"
+printf "运行时 / Runtime installed to: ${GREEN}%s${NC}\n" "${RUNTIME_DIR}/md2wechat"
 printf "文档 / Documentation: https://github.com/${REPO}/blob/main/docs/OPENCLAW.md\n"
 printf "OpenClaw 官网 / OpenClaw: https://openclaw.ai/\n"
 printf "ClawHub 技能市场 / ClawHub: https://clawhub.ai/\n"

@@ -15,6 +15,19 @@ md2wechat-skill 的核心目标不是“把 Markdown 变好看”，而是把文
 - `internal/publish/AssetPipeline` 负责解析后的资产上传、生成、下载和 HTML 回填。
 - `internal/draft` 和 `internal/wechat` 负责平台适配，不再承担命令级业务编排。
 
+## 平台适配层
+
+仓库把 skill 封装分成两条路径，避免把不同平台的安装模型混在一起：
+
+- `skills/md2wechat/`：面向 Claude Code / Codex / OpenCode 的 coding-agent skill。
+- `platforms/openclaw/md2wechat/`：面向 OpenClaw / ClawHub 的专用 skill 包。
+
+两条路径共享同一个 CLI 内核，但平台适配不同：
+
+- coding-agent skill 可以保留面向终端工作流的自然语言说明。
+- OpenClaw skill 需要结构化声明依赖、安装和凭证要求。
+- OpenClaw 安装主线是 skill 包与 runtime 一起安装，`run.sh` 只负责启动，不应在首跑时动态下载二进制。
+
 ## 模块职责
 
 ### `cmd/md2wechat`

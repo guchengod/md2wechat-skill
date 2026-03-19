@@ -88,10 +88,10 @@ jobs:
             printf 'export MD2WECHAT_VERSION_DEFAULT=%q\n' "${VERSION}"
             cat scripts/install-openclaw.sh
           } > "${bundle_dir}/install-openclaw.sh"
-          mkdir -p "${bundle_dir}/skills"
-          cp -r skills/md2wechat "${bundle_dir}/skills/md2wechat"
-          tar -czf "${bundle_dir}/md2wechat-openclaw-skill.tar.gz" -C "${bundle_dir}" skills/md2wechat
-          rm -rf "${bundle_dir}/skills"
+          mkdir -p "${bundle_dir}/openclaw-skill/skills/md2wechat"
+          cp -r platforms/openclaw/md2wechat/. "${bundle_dir}/openclaw-skill/skills/md2wechat/"
+          tar -czf "${bundle_dir}/md2wechat-openclaw-skill.tar.gz" -C "${bundle_dir}/openclaw-skill" skills/md2wechat
+          rm -rf "${bundle_dir}/openclaw-skill"
           chmod +x "${bundle_dir}/install.sh" "${bundle_dir}/md2wechat-linux-amd64" "${bundle_dir}/md2wechat-linux-arm64" "${bundle_dir}/md2wechat-darwin-amd64" "${bundle_dir}/md2wechat-darwin-arm64" 2>/dev/null || true
 
           (
@@ -163,6 +163,8 @@ jobs:
 
           test -f "${home_dir}/.openclaw/skills/md2wechat/SKILL.md"
           test -x "${home_dir}/.openclaw/skills/md2wechat/scripts/run.sh"
+          test -x "${home_dir}/.openclaw/tools/md2wechat/md2wechat"
+          HOME="${home_dir}" "${home_dir}/.openclaw/skills/md2wechat/scripts/run.sh" version --json | grep -q "\"version\": \"${VERSION}\""
 
       - name: Smoke PowerShell installer against same artifact
         env:

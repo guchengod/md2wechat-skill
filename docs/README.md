@@ -6,6 +6,14 @@
 - `CHANGELOG.md`
 - `CLAUDE.md`
 
+## 平台适配层
+
+仓库里有两条 skill 路径，文档分别按平台维护：
+
+- `skills/md2wechat/`：面向 Claude Code / Codex / OpenCode 的 coding-agent skill
+- `platforms/openclaw/md2wechat/`：面向 OpenClaw / ClawHub 的专用 skill 包
+- [OpenClaw 指南](OPENCLAW.md)：OpenClaw 安装、验证与配置说明
+
 ## 入门
 
 - [安装指南](INSTALL.md)
