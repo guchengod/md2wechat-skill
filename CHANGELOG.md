@@ -7,10 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-20
+
+### Added
+- Added a typed publish pipeline with shared article, asset, and action models across `convert`, image generation, draft creation, and image-post flows.
+- Added built-in prompt catalog and discovery commands: `capabilities`, `providers`, `themes`, and `prompts`.
+- Added built-in image prompt presets with explicit use-case metadata, including cover, infographic, banner, ticket, sketchnote, Apple-keynote, and Victorian engraving variants.
+- Added higher-level image generation commands `generate_cover` and `generate_infographic`, plus `generate_image --preset` support.
+- Added per-command image model override via `--model` for image generation commands.
+- Added dedicated onboarding and operator docs, including configuration, discovery, WeChat credential/IP whitelist, smoke verification, and image provider guides.
+
 ### Changed
-- Split the skill documentation into a coding-agent path (`skills/md2wechat/`) and an OpenClaw path (`platforms/openclaw/md2wechat/`).
-- Updated the OpenClaw guides to describe skill-package-plus-runtime installation as the primary path, without relying on `run.sh` runtime downloads.
-- Reworked the documentation index and architecture notes so platform adaptation is treated as a first-class layer.
+- Reworked the CLI around a stable machine-readable contract with consistent `success/code/message/schema_version/status/data/error` JSON envelopes.
+- Split skill packaging into a coding-agent path (`skills/md2wechat/`) and an OpenClaw path (`platforms/openclaw/md2wechat/`), with platform-specific installation and runtime guidance.
+- Promoted built-in embedded assets for default themes, writer styles, and prompt resources so the CLI no longer depends on repo-relative files to function.
+- Hardened release engineering with a single `VERSION` source, `release-check`, CI/release gates, checksum-verified assets, and installer smoke tests.
+- Standardized discovery-first documentation so README, docs, and both skills point users and agents to CLI capabilities instead of hand-maintained lists.
+- Updated default image provider models to match current provider guidance, including `gpt-image-1.5` for OpenAI and newer Gemini defaults.
+
+### Fixed
+- Fixed frontmatter title fallback so Markdown titles are resolved correctly when frontmatter omits `title`, including CRLF input handling.
+- Fixed remote download and image handling boundaries, including stronger SSRF protection and consistent remote/local image resolution.
+- Fixed `convert --json --output` so requested HTML artifacts are written before returning JSON success payloads.
+- Fixed `create_image_post --from-markdown` so resolved local and remote image paths work correctly outside the article directory.
+- Fixed version-pinned installer behavior so release installers no longer silently drift to newer assets.
+- Fixed Gemini image sizing so aspect ratio and image size are forwarded to the official API config, and documented provider-specific size behavior such as ModelScope's `WIDTHxHEIGHT` requirement.
 
 ## [1.11.1] - 2026-03-19
 

@@ -41,7 +41,7 @@ md2wechat --help
 **解决方案 A：重新用安装脚本安装**
 
 ```bash
-export MD2WECHAT_RELEASE_BASE_URL=https://github.com/geekjourneyx/md2wechat-skill/releases/download/v1.11.1
+export MD2WECHAT_RELEASE_BASE_URL=https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.0
 curl -fsSL "${MD2WECHAT_RELEASE_BASE_URL}/install.sh" | bash
 ```
 
