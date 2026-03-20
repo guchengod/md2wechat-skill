@@ -257,6 +257,7 @@ md2wechat themes list --json
 # 查看内置 Prompt Catalog
 md2wechat prompts list --json
 md2wechat prompts list --kind image --json
+md2wechat prompts list --kind image --archetype cover --json
 ```
 
 需要查看具体资源时，可继续用：
@@ -265,6 +266,7 @@ md2wechat prompts list --kind image --json
 md2wechat providers show openrouter --json
 md2wechat themes show autumn-warm --json
 md2wechat prompts show cover-default --kind image --json
+md2wechat prompts show cover-hero --kind image --archetype cover --tag hero --json
 ```
 
 Prompt 模板也可以直接渲染：
@@ -763,8 +765,14 @@ md2wechat download_and_upload https://example.com/image.jpg
 # AI 生成图片并上传（需要配置 IMAGE_API_KEY）
 md2wechat generate_image "A cute cat sitting on a windowsill"
 
+# 用内置封面 preset 生成封面图
+md2wechat generate_cover --article article.md
+
+# 用内置信息图 preset 生成信息图
+md2wechat generate_infographic --article article.md --preset infographic-comparison
+
 # 生成 16:9 比例的封面图（推荐，适配公众号封面）
-md2wechat generate_image --size 2560x1440 "prompt"
+md2wechat generate_image --preset cover-hero --article article.md --size 2560x1440
 ```
 
 > 💡 **公众号封面图建议**：使用 16:9 横向比例（2560x1440）作为文章封面，在微信 feed 流和文章列表中显示效果更好。方形图片（2048x2048）在预览时会被裁剪。
@@ -1463,6 +1471,7 @@ md2wechat write --style dan-koe --humanize
 4. **测试**
    ```bash
    md2wechat generate_image "A golden cat"
+   md2wechat generate_cover --title "AI 文章封面测试" --summary "测试封面 preset"
    ```
 </details>
 

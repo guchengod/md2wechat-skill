@@ -33,8 +33,10 @@ type providerView struct {
 }
 
 var (
-	promptKind string
-	promptVars []string
+	promptKind      string
+	promptArchetype string
+	promptTag       string
+	promptVars      []string
 )
 
 var capabilitiesCmd = &cobra.Command{
@@ -136,9 +138,16 @@ var promptsListCmd = &cobra.Command{
 		if err != nil {
 			return wrapCLIError(codeError, err, err.Error())
 		}
+		prompts := cat.ListFiltered(promptcatalog.ListFilter{
+			Kind:      promptKind,
+			Archetype: promptArchetype,
+			Tag:       promptTag,
+		})
 		responseSuccessWith(codePromptsShown, "Prompts shown", map[string]any{
-			"kind":    promptKind,
-			"prompts": cat.List(promptKind),
+			"kind":      promptKind,
+			"archetype": promptArchetype,
+			"tag":       promptTag,
+			"prompts":   prompts,
 		})
 		return nil
 	},
@@ -156,6 +165,12 @@ var promptsShowCmd = &cobra.Command{
 		spec, err := cat.Get(promptKind, args[0])
 		if err != nil {
 			return newCLIError(codeConfigInvalid, err.Error())
+		}
+		if promptArchetype != "" && !strings.EqualFold(spec.Archetype, promptArchetype) {
+			return newCLIError(codeConfigInvalid, fmt.Sprintf("prompt %s archetype mismatch: expected %s, got %s", spec.Name, promptArchetype, spec.Archetype))
+		}
+		if promptTag != "" && !contains(spec.Tags, promptTag) {
+			return newCLIError(codeConfigInvalid, fmt.Sprintf("prompt %s does not have tag %s", spec.Name, promptTag))
 		}
 		responseSuccessWith(codePromptsShown, "Prompt shown", map[string]any{"prompt": spec})
 		return nil
@@ -192,7 +207,11 @@ func init() {
 	providersCmd.AddCommand(providersListCmd, providersShowCmd)
 	themesCmd.AddCommand(themesListCmd, themesShowCmd)
 	promptsListCmd.Flags().StringVar(&promptKind, "kind", "", "Prompt kind filter")
+	promptsListCmd.Flags().StringVar(&promptArchetype, "archetype", "", "Prompt archetype filter")
+	promptsListCmd.Flags().StringVar(&promptTag, "tag", "", "Prompt tag filter")
 	promptsShowCmd.Flags().StringVar(&promptKind, "kind", "", "Prompt kind")
+	promptsShowCmd.Flags().StringVar(&promptArchetype, "archetype", "", "Expected prompt archetype")
+	promptsShowCmd.Flags().StringVar(&promptTag, "tag", "", "Expected prompt tag")
 	promptsRenderCmd.Flags().StringVar(&promptKind, "kind", "", "Prompt kind")
 	promptsRenderCmd.Flags().StringArrayVar(&promptVars, "var", nil, "Prompt variable in KEY=VALUE form")
 	promptsCmd.AddCommand(promptsListCmd, promptsShowCmd, promptsRenderCmd)
@@ -264,7 +283,7 @@ func buildCapabilitiesData() (map[string]any, error) {
 	return map[string]any{
 		"commands": []string{
 			"convert", "config", "write", "humanize", "upload_image",
-			"download_and_upload", "generate_image", "create_draft",
+			"download_and_upload", "generate_image", "generate_cover", "generate_infographic", "create_draft",
 			"create_image_post", "test-draft", "providers", "themes",
 			"prompts", "capabilities", "version",
 		},
@@ -275,10 +294,11 @@ func buildCapabilitiesData() (map[string]any, error) {
 			"background_types": []string{"default", "grid", "none"},
 			"default_theme":    currentCfg.DefaultTheme,
 		},
-		"providers":    providers,
-		"themes":       themes,
-		"prompts":      allPrompts,
-		"prompt_kinds": sortedPromptKinds(allPrompts),
+		"providers":         providers,
+		"themes":            themes,
+		"prompts":           allPrompts,
+		"prompt_kinds":      sortedPromptKinds(allPrompts),
+		"prompt_archetypes": sortedPromptArchetypes(allPrompts),
 	}, nil
 }
 
@@ -296,7 +316,7 @@ func parsePromptVars(items []string) (map[string]string, error) {
 
 func contains(items []string, target string) bool {
 	for _, item := range items {
-		if item == target {
+		if strings.EqualFold(item, target) {
 			return true
 		}
 	}
@@ -314,4 +334,20 @@ func sortedPromptKinds(prompts []promptcatalog.PromptSpec) []string {
 	}
 	sort.Strings(kinds)
 	return kinds
+}
+
+func sortedPromptArchetypes(prompts []promptcatalog.PromptSpec) []string {
+	set := map[string]struct{}{}
+	for _, prompt := range prompts {
+		if prompt.Archetype == "" {
+			continue
+		}
+		set[prompt.Archetype] = struct{}{}
+	}
+	archetypes := make([]string, 0, len(set))
+	for archetype := range set {
+		archetypes = append(archetypes, archetype)
+	}
+	sort.Strings(archetypes)
+	return archetypes
 }

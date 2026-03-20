@@ -222,6 +222,12 @@ ClawHub 发布跳过。如需手动发布，请稍后执行：
 1. 更新相关文档
 2. 检查 SKILL.md 中的命令示例
 3. 运行功能测试
+4. 如果修改涉及 CLI command / subcommand / flag / JSON 输出 / provider / theme / prompt：
+   - 必须同步审校 `README.md`
+   - 必须同步审校 `docs/DISCOVERY.md`
+   - 必须同步审校 `docs/FAQ.md`
+   - 必须同步审校相关 `SKILL.md`
+5. 这类任务不以“代码改完”为完成标准，必须完成高价值入口文档校准，防止代码和文档漂移
 
 ### 目录变更后
 
@@ -236,6 +242,11 @@ ClawHub 发布跳过。如需手动发布，请稍后执行：
 3. 添加 FAQ 条目（如适用）
 4. 更新 references/ 参考文档
 5. 如果新增 provider/theme/prompt/discovery 命令，同步更新 `docs/DISCOVERY.md`
+6. 如果影响配置、安装、默认行为或平台路径，同步审校：
+   - `docs/CONFIG.md`
+   - `docs/QUICKSTART.md`
+   - `docs/USAGE.md`
+   - `docs/OPENCLAW.md`（如影响 OpenClaw）
 
 ---
 

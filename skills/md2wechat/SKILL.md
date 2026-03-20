@@ -77,13 +77,17 @@ bash skills/md2wechat/scripts/run.sh capabilities --json
 bash skills/md2wechat/scripts/run.sh providers list --json
 bash skills/md2wechat/scripts/run.sh themes list --json
 bash skills/md2wechat/scripts/run.sh prompts list --json
+bash skills/md2wechat/scripts/run.sh prompts list --kind image --archetype cover --json
 ```
 
 When a task depends on a specific template, inspect it first:
 
 ```bash
 bash skills/md2wechat/scripts/run.sh prompts show cover-default --kind image --json
+bash skills/md2wechat/scripts/run.sh prompts show cover-hero --kind image --archetype cover --tag hero --json
 bash skills/md2wechat/scripts/run.sh prompts render cover-default --kind image --var article_title='Example' --json
+bash skills/md2wechat/scripts/run.sh generate_cover --article article.md
+bash skills/md2wechat/scripts/run.sh generate_infographic --article article.md --preset infographic-comparison
 ```
 
 ### Natural Language Image Generation
@@ -422,8 +426,14 @@ bash skills/md2wechat/scripts/run.sh download_and_upload "https://example.com/im
 # Generate with default size (2048x2048 square)
 bash skills/md2wechat/scripts/run.sh generate_image "A cute cat sitting on a windowsill"
 
+# Generate a cover image from bundled prompt presets
+bash skills/md2wechat/scripts/run.sh generate_cover --article article.md
+
+# Generate an infographic from bundled prompt presets
+bash skills/md2wechat/scripts/run.sh generate_infographic --article article.md --preset infographic-process
+
 # Generate with 16:9 ratio for WeChat cover (recommended)
-bash skills/md2wechat/scripts/run.sh generate_image --size 2560x1440 "prompt"
+bash skills/md2wechat/scripts/run.sh generate_image --preset cover-hero --article article.md --size 2560x1440
 ```
 
 **WeChat Cover Images**: For article covers, use 16:9 horizontal ratio (2560x1440 recommended) as it displays better in WeChat's feed and article list. Square images (2048x2048) are cropped in preview.

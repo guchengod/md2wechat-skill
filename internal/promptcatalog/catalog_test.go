@@ -86,3 +86,57 @@ func TestCatalogPrefersExplicitPromptDirOverBuiltin(t *testing.T) {
 		t.Fatalf("Template = %q", spec.Template)
 	}
 }
+
+func TestCatalogListFilteredByArchetypeAndTag(t *testing.T) {
+	ResetDefaultCatalogForTests()
+	t.Chdir(t.TempDir())
+
+	cat, err := DefaultCatalog()
+	if err != nil {
+		t.Fatalf("DefaultCatalog() error = %v", err)
+	}
+
+	prompts := cat.ListFiltered(ListFilter{
+		Kind:      "image",
+		Archetype: "cover",
+		Tag:       "editorial",
+	})
+	if len(prompts) == 0 {
+		t.Fatal("expected filtered image prompts")
+	}
+	for _, prompt := range prompts {
+		if prompt.Kind != "image" {
+			t.Fatalf("unexpected kind: %#v", prompt)
+		}
+		if prompt.Archetype != "cover" {
+			t.Fatalf("unexpected archetype: %#v", prompt)
+		}
+		if !containsTag(prompt.Tags, "editorial") {
+			t.Fatalf("expected editorial tag: %#v", prompt)
+		}
+	}
+}
+
+func TestBuiltinImagePromptIncludesArchetypeMetadata(t *testing.T) {
+	ResetDefaultCatalogForTests()
+	t.Chdir(t.TempDir())
+
+	cat, err := DefaultCatalog()
+	if err != nil {
+		t.Fatalf("DefaultCatalog() error = %v", err)
+	}
+
+	spec, err := cat.Get("image", "cover-hero")
+	if err != nil {
+		t.Fatalf("Get(image, cover-hero) error = %v", err)
+	}
+	if spec.Archetype != "cover" {
+		t.Fatalf("Archetype = %q", spec.Archetype)
+	}
+	if !containsTag(spec.Tags, "hero") {
+		t.Fatalf("Tags = %#v", spec.Tags)
+	}
+	if len(spec.Examples) == 0 {
+		t.Fatalf("Examples = %#v", spec.Examples)
+	}
+}

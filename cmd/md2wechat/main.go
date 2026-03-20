@@ -214,42 +214,28 @@ Examples:
 	}
 	rootCmd.AddCommand(downloadAndUploadCmd)
 
-	// generate_image command
-	var generateImageCmdSize string
 	var generateImageCmd = &cobra.Command{
-		Use:   "generate_image <prompt>",
+		Use:   "generate_image [prompt]",
 		Short: "Generate image via AI and upload to WeChat",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return initConfig()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			prompt := args[0]
-			if err := cfg.ValidateForImageGeneration(); err != nil {
-				return wrapCLIError(codeConfigInvalid, err, err.Error())
-			}
-			processor := newRuntimeImageProcessor()
-
-			// 如果指定了尺寸，临时覆盖配置
-			if generateImageCmdSize != "" {
-				result, err := processor.GenerateAndUploadWithSize(prompt, generateImageCmdSize)
-				if err != nil {
-					return wrapCLIError(codeImageGenerateFailed, err, err.Error())
-				}
-				responseSuccess(result)
-				return nil
-			}
-
-			result, err := processor.GenerateAndUpload(prompt)
-			if err != nil {
-				return wrapCLIError(codeImageGenerateFailed, err, err.Error())
-			}
-			responseSuccess(result)
-			return nil
+			return runGenerateImage(args)
 		},
 	}
 	generateImageCmd.Flags().StringVarP(&generateImageCmdSize, "size", "s", "", "Image size (e.g., 2560x1440 for 16:9)")
+	generateImageCmd.Flags().StringVar(&generateImageCmdPreset, "preset", "", "Prompt preset from the image prompt catalog")
+	generateImageCmd.Flags().StringVarP(&generateImageCmdArticle, "article", "a", "", "Article markdown file used to render a preset prompt")
+	generateImageCmd.Flags().StringVar(&generateImageCmdTitle, "title", "", "Article title used to render a preset prompt")
+	generateImageCmd.Flags().StringVar(&generateImageCmdSummary, "summary", "", "Article summary used to render a preset prompt")
+	generateImageCmd.Flags().StringVar(&generateImageCmdKeywords, "keywords", "", "Keywords used to render a preset prompt")
+	generateImageCmd.Flags().StringVar(&generateImageCmdStyle, "style", "", "Visual style used to render a preset prompt")
+	generateImageCmd.Flags().StringVar(&generateImageCmdAspect, "aspect", "", "Aspect ratio hint used to render a preset prompt, e.g. 16:9 or 3:4")
 	rootCmd.AddCommand(generateImageCmd)
+	rootCmd.AddCommand(generateCoverCmd)
+	rootCmd.AddCommand(generateInfographicCmd)
 
 	// create_draft command
 	var createDraftCmd = &cobra.Command{

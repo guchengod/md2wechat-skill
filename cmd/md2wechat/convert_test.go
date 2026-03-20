@@ -76,6 +76,10 @@ func (f *fakeImageProcessor) GenerateAndUpload(prompt string) (*image.GenerateAn
 	return nil, fmt.Errorf("unexpected prompt: %s", prompt)
 }
 
+func (f *fakeImageProcessor) GenerateAndUploadWithSize(prompt string, size string) (*image.GenerateAndUploadResult, error) {
+	return f.GenerateAndUpload(prompt)
+}
+
 type fakeDraftCreator struct {
 	artifacts []publish.Artifact
 	result    *publish.DraftResult

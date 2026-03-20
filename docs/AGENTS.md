@@ -55,7 +55,18 @@ Treat these commands as the source of truth for:
 2. Label aspirational or not-yet-shipped paths clearly.
 3. If a feature is not backed by current code or release assets, do not describe it as shipped.
 4. Prefer short, operational instructions over marketing copy.
-5. When new discovery commands or prompt assets are added, update `README.md`, `docs/DISCOVERY.md`, the relevant `SKILL.md`, and this file in the same change.
+5. If any CLI command, subcommand, flag, JSON response shape, prompt asset, provider, or theme behavior changes, treat documentation sync as part of the same task.
+6. The minimum documentation review set for CLI changes is:
+   - `README.md`
+   - `docs/DISCOVERY.md`
+   - `docs/FAQ.md`
+   - the relevant `SKILL.md`
+7. If the CLI change affects setup, config, install, or migration behavior, also review:
+   - `docs/CONFIG.md`
+   - `docs/QUICKSTART.md`
+   - `docs/USAGE.md`
+   - `docs/OPENCLAW.md` when platform behavior changes
+8. Do not stop at “updated one doc”. Re-audit the highest-signal entry points so user-facing docs, agent-facing docs, and CLI behavior stay aligned.
 
 ## Escalation
 

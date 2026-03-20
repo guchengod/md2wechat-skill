@@ -19,10 +19,19 @@ type PromptSpec struct {
 	Kind        string            `yaml:"kind" json:"kind"`
 	Description string            `yaml:"description" json:"description"`
 	Version     string            `yaml:"version" json:"version"`
+	Archetype   string            `yaml:"archetype,omitempty" json:"archetype,omitempty"`
+	Tags        []string          `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Examples    []string          `yaml:"examples,omitempty" json:"examples,omitempty"`
 	Variables   []string          `yaml:"variables,omitempty" json:"variables,omitempty"`
 	Template    string            `yaml:"template" json:"template"`
 	Metadata    map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 	Source      string            `yaml:"-" json:"source,omitempty"`
+}
+
+type ListFilter struct {
+	Kind      string
+	Archetype string
+	Tag       string
 }
 
 type Catalog struct {
@@ -165,9 +174,19 @@ func parsePromptSpec(data []byte) (*PromptSpec, error) {
 }
 
 func (c *Catalog) List(kind string) []PromptSpec {
+	return c.ListFiltered(ListFilter{Kind: kind})
+}
+
+func (c *Catalog) ListFiltered(filter ListFilter) []PromptSpec {
 	result := make([]PromptSpec, 0, len(c.prompts))
 	for _, spec := range c.prompts {
-		if kind != "" && spec.Kind != kind {
+		if filter.Kind != "" && !strings.EqualFold(spec.Kind, filter.Kind) {
+			continue
+		}
+		if filter.Archetype != "" && !strings.EqualFold(spec.Archetype, filter.Archetype) {
+			continue
+		}
+		if filter.Tag != "" && !containsTag(spec.Tags, filter.Tag) {
 			continue
 		}
 		result = append(result, *spec)
@@ -179,6 +198,19 @@ func (c *Catalog) List(kind string) []PromptSpec {
 		return result[i].Kind < result[j].Kind
 	})
 	return result
+}
+
+func containsTag(tags []string, target string) bool {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return true
+	}
+	for _, tag := range tags {
+		if strings.EqualFold(tag, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Catalog) Get(kind, name string) (*PromptSpec, error) {

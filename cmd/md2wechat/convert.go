@@ -19,6 +19,7 @@ type imageProcessor interface {
 	UploadLocalImage(filePath string) (*image.UploadResult, error)
 	DownloadAndUpload(url string) (*image.UploadResult, error)
 	GenerateAndUpload(prompt string) (*image.GenerateAndUploadResult, error)
+	GenerateAndUploadWithSize(prompt string, size string) (*image.GenerateAndUploadResult, error)
 }
 
 var (

@@ -271,6 +271,8 @@ md2wechat capabilities --json
 md2wechat providers list --json
 md2wechat themes list --json
 md2wechat prompts list --json
+md2wechat prompts list --kind image --archetype cover --json
+md2wechat prompts list --kind image --tag editorial --json
 ```
 
 看具体资源：
@@ -284,6 +286,13 @@ md2wechat prompts show cover-default --kind image --json
 完整说明见：
 
 - [DISCOVERY.md](DISCOVERY.md)
+
+如果你不想自己写图片 prompt，可以直接用内置 preset：
+
+```bash
+md2wechat generate_cover --article article.md
+md2wechat generate_infographic --article article.md --preset infographic-comparison
+```
 
 ---
 

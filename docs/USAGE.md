@@ -168,6 +168,15 @@ md2wechat download_and_upload https://example.com/image.jpg
 ```bash
 # 生成图片并上传
 md2wechat generate_image "A beautiful sunset over mountains"
+
+# 用内置封面模板生成封面图
+md2wechat generate_cover --article article.md
+
+# 用内置信息图模板生成信息图
+md2wechat generate_infographic --article article.md --preset infographic-timeline
+
+# 通用入口也支持 preset 模式
+md2wechat generate_image --preset cover-hero --article article.md
 ```
 
 输出示例：

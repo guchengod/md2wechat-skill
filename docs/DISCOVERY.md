@@ -89,6 +89,9 @@ md2wechat prompts list --json
 md2wechat prompts list --kind humanizer --json
 md2wechat prompts list --kind refine --json
 md2wechat prompts list --kind image --json
+md2wechat prompts list --kind image --archetype cover --json
+md2wechat prompts list --kind image --archetype infographic --json
+md2wechat prompts list --kind image --tag editorial --json
 ```
 
 ### 查看 Prompt 定义
@@ -97,6 +100,7 @@ md2wechat prompts list --kind image --json
 md2wechat prompts show medium --kind humanizer --json
 md2wechat prompts show default --kind refine --json
 md2wechat prompts show cover-default --kind image --json
+md2wechat prompts show cover-hero --kind image --archetype cover --tag hero --json
 ```
 
 ### 渲染 Prompt 模板
@@ -109,16 +113,47 @@ md2wechat prompts render cover-default \
   --json
 ```
 
+### 用 preset 直接生成图片
+
+```bash
+md2wechat generate_image --preset cover-hero --article article.md
+md2wechat generate_cover --article article.md
+md2wechat generate_infographic --article article.md --preset infographic-comparison
+```
+
+高频图片命令和 prompt catalog 的关系是：
+
+- `generate_image`: 通用入口，可直接传 raw prompt，也可用 `--preset`
+- `generate_cover`: `cover` archetype 的薄包装命令
+- `generate_infographic`: `infographic` archetype 的薄包装命令
+
 当前内置 prompt kind：
 
 - `humanizer`
 - `refine`
 - `image`
 
-当前内置图片 archetype：
+当前内置图片 archetype 分组：
+
+- `cover`
+- `infographic`
+
+当前内置图片模板示例：
 
 - `cover-default`
+- `cover-hero`
+- `cover-minimal`
+- `cover-metaphor`
+- `cover-editorial`
+- `cover-illustrated`
+- `cover-data-visual`
 - `infographic-default`
+- `infographic-comparison`
+- `infographic-timeline`
+- `infographic-dashboard`
+- `infographic-hierarchy`
+- `infographic-bento`
+- `infographic-process`
 
 ## Prompt 资产覆盖顺序
 

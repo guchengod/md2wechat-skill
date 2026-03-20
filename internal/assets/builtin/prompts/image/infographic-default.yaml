@@ -2,15 +2,25 @@ name: infographic-default
 kind: image
 description: 通用文章信息图提示词模板
 version: "1.0"
+archetype: infographic
+tags:
+  - infographic
+  - default
+  - summary
+examples:
+  - 文章内容总览信息图
+  - 适合把长文核心观点压缩成单张图
 variables:
   - ARTICLE_TITLE
   - KEY_POINTS
   - VISUAL_STYLE
+  - ASPECT_RATIO
 template: |
   为文章生成信息图提示词。
   标题：{{ARTICLE_TITLE}}
   核心要点：{{KEY_POINTS}}
   视觉风格：{{VISUAL_STYLE}}
+  画幅：{{ASPECT_RATIO}}
 
   要求：
   1. 信息结构清晰，可视化层级明确
