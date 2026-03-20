@@ -101,7 +101,17 @@ md2wechat prompts show medium --kind humanizer --json
 md2wechat prompts show default --kind refine --json
 md2wechat prompts show cover-default --kind image --json
 md2wechat prompts show cover-hero --kind image --archetype cover --tag hero --json
+md2wechat prompts show infographic-victorian-engraving-banner --kind image --archetype infographic --tag victorian --json
 ```
+
+对于图片 prompt，`archetype` 表示主要分组，不代表只能用于这一种场景。优先查看 `prompts show --json` 返回的：
+
+- `primary_use_case`
+- `compatible_use_cases`
+- `recommended_aspect_ratios`
+- `default_aspect_ratio`
+
+这样 Agent 能判断某些信息图 preset 是否也适合作为封面使用。
 
 ### 渲染 Prompt 模板
 
@@ -121,6 +131,7 @@ md2wechat generate_cover --article article.md
 md2wechat generate_infographic --article article.md --preset infographic-comparison
 md2wechat generate_infographic --article article.md --preset infographic-dark-ticket-cn --aspect 21:9
 md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
+md2wechat generate_infographic --article article.md --preset infographic-victorian-engraving-banner --aspect 21:9
 ```
 
 高频图片命令和 prompt catalog 的关系是：
@@ -128,6 +139,8 @@ md2wechat generate_infographic --article article.md --preset infographic-handdra
 - `generate_image`: 通用入口，可直接传 raw prompt，也可用 `--preset`
 - `generate_cover`: `cover` archetype 的薄包装命令
 - `generate_infographic`: `infographic` archetype 的薄包装命令
+
+如果某个图片 preset 的 `compatible_use_cases` 包含 `cover`，那么它也可以被 `generate_cover` 使用；默认画幅优先跟随 prompt 自身声明的 `default_aspect_ratio`。
 
 当前内置 prompt kind：
 
@@ -159,6 +172,7 @@ md2wechat generate_infographic --article article.md --preset infographic-handdra
 - `infographic-flat-vector-panorama`
 - `infographic-dark-ticket-cn`
 - `infographic-handdrawn-sketchnote`
+- `infographic-victorian-engraving-banner`
 
 ## Prompt 资产覆盖顺序
 

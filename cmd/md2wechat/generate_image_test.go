@@ -170,6 +170,44 @@ func TestRunGeneratePresetImageRejectsWrongArchetype(t *testing.T) {
 	}
 }
 
+func TestRunGeneratePresetImageAllowsCompatibleCoverUseCase(t *testing.T) {
+	cfg = &config.Config{
+		WechatAppID:  "appid",
+		WechatSecret: "secret",
+		ImageAPIKey:  "image-key",
+	}
+
+	_, err := resolveGenerateImagePrompt(generateImageInput{
+		Preset:            "infographic-victorian-engraving-banner",
+		Title:             "标题",
+		Summary:           "摘要",
+		RequiredArchetype: "cover",
+	})
+	if err != nil {
+		t.Fatalf("resolveGenerateImagePrompt() error = %v", err)
+	}
+}
+
+func TestResolveGenerateImagePromptUsesSpecDefaultAspectRatio(t *testing.T) {
+	cfg = &config.Config{
+		WechatAppID:  "appid",
+		WechatSecret: "secret",
+		ImageAPIKey:  "image-key",
+	}
+
+	prompt, err := resolveGenerateImagePrompt(generateImageInput{
+		Preset:  "infographic-victorian-engraving-banner",
+		Title:   "标题",
+		Summary: "摘要",
+	})
+	if err != nil {
+		t.Fatalf("resolveGenerateImagePrompt() error = %v", err)
+	}
+	if !strings.Contains(prompt, "21:9") {
+		t.Fatalf("expected 21:9 default aspect ratio in prompt: %q", prompt)
+	}
+}
+
 func TestRunGenerateCoverUsesDefaultPreset(t *testing.T) {
 	oldCfg := cfg
 	oldNewImageProcessor := newImageProcessor

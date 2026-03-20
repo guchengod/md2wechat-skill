@@ -294,7 +294,16 @@ md2wechat generate_cover --article article.md
 md2wechat generate_infographic --article article.md --preset infographic-comparison
 md2wechat generate_infographic --article article.md --preset infographic-dark-ticket-cn --aspect 21:9
 md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
+md2wechat generate_infographic --article article.md --preset infographic-victorian-engraving-banner --aspect 21:9
 ```
+
+如果你不确定某个图片 preset 更偏封面还是信息图，先运行：
+
+```bash
+md2wechat prompts show <preset-name> --kind image --json
+```
+
+优先看输出里的 `primary_use_case`、`compatible_use_cases` 和 `default_aspect_ratio`。有些信息图 preset 也可以兼作封面，不需要复制成两份模板。
 
 ---
 

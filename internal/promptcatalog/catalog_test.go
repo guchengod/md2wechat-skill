@@ -224,3 +224,30 @@ func TestBuiltinHanddrawnSketchnotePromptIsDiscoverable(t *testing.T) {
 		t.Fatalf("Template = %q", spec.Template)
 	}
 }
+
+func TestBuiltinVictorianEngravingBannerPromptIsDiscoverable(t *testing.T) {
+	ResetDefaultCatalogForTests()
+	t.Chdir(t.TempDir())
+
+	cat, err := DefaultCatalog()
+	if err != nil {
+		t.Fatalf("DefaultCatalog() error = %v", err)
+	}
+
+	spec, err := cat.Get("image", "infographic-victorian-engraving-banner")
+	if err != nil {
+		t.Fatalf("Get(image, infographic-victorian-engraving-banner) error = %v", err)
+	}
+	if spec.Archetype != "infographic" {
+		t.Fatalf("Archetype = %q", spec.Archetype)
+	}
+	if !containsTag(spec.Tags, "cover") || !containsTag(spec.Tags, "victorian") {
+		t.Fatalf("Tags = %#v", spec.Tags)
+	}
+	if spec.Metadata["author"] != "geekjourneyx" || spec.Metadata["provenance"] != "original" {
+		t.Fatalf("Metadata = %#v", spec.Metadata)
+	}
+	if !strings.Contains(spec.Template, "21:9") || !strings.Contains(spec.Template, "Gustave Doré") {
+		t.Fatalf("Template = %q", spec.Template)
+	}
+}

@@ -15,17 +15,21 @@ import (
 const promptsDirEnvVar = "MD2WECHAT_PROMPTS_DIR"
 
 type PromptSpec struct {
-	Name        string            `yaml:"name" json:"name"`
-	Kind        string            `yaml:"kind" json:"kind"`
-	Description string            `yaml:"description" json:"description"`
-	Version     string            `yaml:"version" json:"version"`
-	Archetype   string            `yaml:"archetype,omitempty" json:"archetype,omitempty"`
-	Tags        []string          `yaml:"tags,omitempty" json:"tags,omitempty"`
-	Examples    []string          `yaml:"examples,omitempty" json:"examples,omitempty"`
-	Variables   []string          `yaml:"variables,omitempty" json:"variables,omitempty"`
-	Template    string            `yaml:"template" json:"template"`
-	Metadata    map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
-	Source      string            `yaml:"-" json:"source,omitempty"`
+	Name                    string            `yaml:"name" json:"name"`
+	Kind                    string            `yaml:"kind" json:"kind"`
+	Description             string            `yaml:"description" json:"description"`
+	Version                 string            `yaml:"version" json:"version"`
+	Archetype               string            `yaml:"archetype,omitempty" json:"archetype,omitempty"`
+	PrimaryUseCase          string            `yaml:"primary_use_case,omitempty" json:"primary_use_case,omitempty"`
+	CompatibleUseCases      []string          `yaml:"compatible_use_cases,omitempty" json:"compatible_use_cases,omitempty"`
+	RecommendedAspectRatios []string          `yaml:"recommended_aspect_ratios,omitempty" json:"recommended_aspect_ratios,omitempty"`
+	DefaultAspectRatio      string            `yaml:"default_aspect_ratio,omitempty" json:"default_aspect_ratio,omitempty"`
+	Tags                    []string          `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Examples                []string          `yaml:"examples,omitempty" json:"examples,omitempty"`
+	Variables               []string          `yaml:"variables,omitempty" json:"variables,omitempty"`
+	Template                string            `yaml:"template" json:"template"`
+	Metadata                map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+	Source                  string            `yaml:"-" json:"source,omitempty"`
 }
 
 type ListFilter struct {
@@ -170,6 +174,9 @@ func parsePromptSpec(data []byte) (*PromptSpec, error) {
 	if spec.Template == "" {
 		return nil, fmt.Errorf("prompt spec requires template")
 	}
+	if spec.PrimaryUseCase == "" && spec.Archetype != "" {
+		spec.PrimaryUseCase = spec.Archetype
+	}
 	return &spec, nil
 }
 
@@ -207,6 +214,28 @@ func containsTag(tags []string, target string) bool {
 	}
 	for _, tag := range tags {
 		if strings.EqualFold(tag, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func SupportsUseCase(spec *PromptSpec, useCase string) bool {
+	if spec == nil {
+		return false
+	}
+	useCase = strings.TrimSpace(useCase)
+	if useCase == "" {
+		return true
+	}
+	if strings.EqualFold(spec.PrimaryUseCase, useCase) {
+		return true
+	}
+	if strings.EqualFold(spec.Archetype, useCase) {
+		return true
+	}
+	for _, compatible := range spec.CompatibleUseCases {
+		if strings.EqualFold(compatible, useCase) {
 			return true
 		}
 	}

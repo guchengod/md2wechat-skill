@@ -3,6 +3,11 @@ kind: image
 description: 扁平化矢量插画风格的横向全景信息图
 version: "1.0"
 archetype: infographic
+primary_use_case: infographic
+recommended_aspect_ratios:
+  - 21:9
+  - 16:9
+default_aspect_ratio: 21:9
 metadata:
   author: geekjourneyx
   inspired_by: op7418

@@ -267,6 +267,7 @@ md2wechat providers show openrouter --json
 md2wechat themes show autumn-warm --json
 md2wechat prompts show cover-default --kind image --json
 md2wechat prompts show cover-hero --kind image --archetype cover --tag hero --json
+md2wechat prompts show infographic-victorian-engraving-banner --kind image --archetype infographic --tag victorian --json
 ```
 
 Prompt 模板也可以直接渲染：
@@ -280,6 +281,8 @@ md2wechat prompts render cover-default \
 ```
 
 详细说明见 [docs/DISCOVERY.md](docs/DISCOVERY.md)。
+
+图片 prompt 的底层统一归类为 `kind=image`。`cover` 和 `infographic` 是主要用途分组，不是两套独立系统。判断某个 preset 能否兼作封面或信息图时，优先看 `prompts show --json` 返回的 `primary_use_case`、`compatible_use_cases`、`recommended_aspect_ratios` 和 `default_aspect_ratio`。
 
 ### 风格写作 🆕
 
@@ -776,6 +779,9 @@ md2wechat generate_infographic --article article.md --preset infographic-dark-ti
 
 # 生成手绘 sketchnote 信息图
 md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
+
+# 生成维多利亚黑白版画横幅信息图（也可兼作封面，推荐 21:9）
+md2wechat generate_infographic --article article.md --preset infographic-victorian-engraving-banner --aspect 21:9
 
 # 生成 16:9 比例的封面图（推荐，适配公众号封面）
 md2wechat generate_image --preset cover-hero --article article.md --size 2560x1440

@@ -113,8 +113,8 @@ func resolveGenerateImagePrompt(input generateImageInput) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if input.RequiredArchetype != "" && !strings.EqualFold(spec.Archetype, input.RequiredArchetype) {
-		return "", fmt.Errorf("preset %s is %s, expected %s", spec.Name, spec.Archetype, input.RequiredArchetype)
+	if input.RequiredArchetype != "" && !promptcatalog.SupportsUseCase(spec, input.RequiredArchetype) {
+		return "", fmt.Errorf("preset %s is %s/%s, expected %s", spec.Name, spec.Archetype, spec.PrimaryUseCase, input.RequiredArchetype)
 	}
 
 	ctx, err := buildGenerateImageContext(input)
@@ -128,7 +128,7 @@ func resolveGenerateImagePrompt(input generateImageInput) (string, error) {
 		"KEYWORDS":        ctx.Keywords,
 		"KEY_POINTS":      ctx.KeyPoints,
 		"VISUAL_STYLE":    defaultString(input.Style, defaultVisualStyle(spec.Archetype)),
-		"ASPECT_RATIO":    defaultString(input.Aspect, defaultAspectRatio(spec.Archetype)),
+		"ASPECT_RATIO":    defaultString(input.Aspect, spec.DefaultAspectRatio, defaultAspectRatio(spec.Archetype)),
 	})
 	if err != nil {
 		return "", err
