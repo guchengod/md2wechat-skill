@@ -1,6 +1,6 @@
 ---
 name: md2wechat
-description: Convert Markdown to WeChat Official Account HTML. Use this whenever the user wants WeChat article conversion, themed Markdown rendering, draft upload, image generation for articles, image-post creation, writer-style drafting, AI trace removal, or needs to inspect supported providers, themes, and prompt templates before running the workflow.
+description: Convert Markdown to WeChat Official Account HTML. Use this whenever the user wants WeChat article conversion, draft upload, image generation for articles, cover or infographic generation, image-post creation, writer-style drafting, AI trace removal, or needs to inspect supported providers, themes, and prompt templates before running the workflow.
 ---
 
 # MD to WeChat
@@ -8,7 +8,7 @@ description: Convert Markdown to WeChat Official Account HTML. Use this whenever
 Converts Markdown articles to WeChat Official Account formatted HTML with inline CSS and optionally uploads to draft box. Supports two modes:
 
 - **API Mode**: Fast conversion using md2wechat.cn API
-- **AI Mode**: Beautiful themed layouts powered by Claude AI
+- **AI Mode**: Generate themed AI requests / prompts for external models such as Claude Code
 
 ## Quick Start
 
@@ -16,7 +16,7 @@ Converts Markdown articles to WeChat Official Account formatted HTML with inline
 # Preview HTML (API mode, fast)
 bash skills/md2wechat/scripts/run.sh convert article.md --preview
 
-# Preview HTML (AI mode, themed)
+# Generate AI request / prompt (AI mode, themed)
 bash skills/md2wechat/scripts/run.sh convert article.md --mode ai --theme autumn-warm --preview
 
 # Upload to WeChat draft box
@@ -302,7 +302,7 @@ bash skills/md2wechat/scripts/run.sh convert article.md --mode api
 
 ### AI Mode
 
-Read the selected style prompt from `references/themes.md` and generate HTML with **inline CSS**.
+Read the selected style prompt from `references/themes.md` and generate an AI request / prompt for an external model to continue into WeChat-safe HTML with **inline CSS**.
 
 **Important Rules**:
 
@@ -382,7 +382,8 @@ User: "Make a diagram showing user signup flow"
 
 **I will:**
 1. Create an appropriate prompt based on your description
-2. Call: `bash skills/md2wechat/scripts/run.sh generate_image "prompt"`
+2. Prefer a bundled preset when the image is a cover or infographic
+3. Otherwise call: `bash skills/md2wechat/scripts/run.sh generate_image "prompt"`
 3. Return the WeChat URL and media ID
 
 **Use when:** You just need an image, not for any article.
@@ -598,8 +599,8 @@ A story about memories...
 **Process**:
 1. User selects AI mode + autumn-warm theme
 2. Read theme prompt from references/themes.md
-3. Generate themed HTML with inline CSS
-4. Preview or upload
+3. Generate themed AI request / prompt
+4. Continue in Claude Code or another compatible AI environment to produce HTML
 
 ### Example 4: AI Image Generation via Natural Language
 
@@ -805,8 +806,14 @@ bash skills/md2wechat/scripts/run.sh download_and_upload https://example.com/ima
 # Generate AI image (requires IMAGE_API_KEY)
 bash skills/md2wechat/scripts/run.sh generate_image "A cute cat sitting on a windowsill"
 
-# Generate with 16:9 ratio for WeChat cover (recommended)
-bash skills/md2wechat/scripts/run.sh generate_image --size 2560x1440 "prompt"
+# Generate cover image from bundled presets
+bash skills/md2wechat/scripts/run.sh generate_cover --article article.md
+
+# Generate infographic image from bundled presets
+bash skills/md2wechat/scripts/run.sh generate_infographic --article article.md --preset infographic-comparison
+
+# Generate with 16:9 ratio for WeChat cover via preset (recommended)
+bash skills/md2wechat/scripts/run.sh generate_image --preset cover-hero --article article.md --size 2560x1440
 
 # Initialize config
 bash skills/md2wechat/scripts/run.sh config init
