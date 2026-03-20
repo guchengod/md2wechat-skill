@@ -292,6 +292,8 @@ md2wechat prompts show cover-default --kind image --json
 ```bash
 md2wechat generate_cover --article article.md
 md2wechat generate_infographic --article article.md --preset infographic-comparison
+md2wechat generate_infographic --article article.md --preset infographic-dark-ticket-cn --aspect 21:9
+md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
 ```
 
 ---

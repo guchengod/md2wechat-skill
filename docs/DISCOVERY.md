@@ -119,6 +119,8 @@ md2wechat prompts render cover-default \
 md2wechat generate_image --preset cover-hero --article article.md
 md2wechat generate_cover --article article.md
 md2wechat generate_infographic --article article.md --preset infographic-comparison
+md2wechat generate_infographic --article article.md --preset infographic-dark-ticket-cn --aspect 21:9
+md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
 ```
 
 高频图片命令和 prompt catalog 的关系是：
@@ -154,6 +156,9 @@ md2wechat generate_infographic --article article.md --preset infographic-compari
 - `infographic-hierarchy`
 - `infographic-bento`
 - `infographic-process`
+- `infographic-flat-vector-panorama`
+- `infographic-dark-ticket-cn`
+- `infographic-handdrawn-sketchnote`
 
 ## Prompt 资产覆盖顺序
 

@@ -771,6 +771,12 @@ md2wechat generate_cover --article article.md
 # 用内置信息图 preset 生成信息图
 md2wechat generate_infographic --article article.md --preset infographic-comparison
 
+# 生成暗黑票券风中文信息图（推荐 21:9）
+md2wechat generate_infographic --article article.md --preset infographic-dark-ticket-cn --aspect 21:9
+
+# 生成手绘 sketchnote 信息图
+md2wechat generate_infographic --article article.md --preset infographic-handdrawn-sketchnote
+
 # 生成 16:9 比例的封面图（推荐，适配公众号封面）
 md2wechat generate_image --preset cover-hero --article article.md --size 2560x1440
 ```

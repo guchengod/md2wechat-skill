@@ -170,3 +170,57 @@ func TestBuiltinImagePromptSupportsAttributionMetadata(t *testing.T) {
 		t.Fatalf("provenance metadata = %#v", spec.Metadata)
 	}
 }
+
+func TestBuiltinDarkTicketInfographicPromptIsDiscoverable(t *testing.T) {
+	ResetDefaultCatalogForTests()
+	t.Chdir(t.TempDir())
+
+	cat, err := DefaultCatalog()
+	if err != nil {
+		t.Fatalf("DefaultCatalog() error = %v", err)
+	}
+
+	spec, err := cat.Get("image", "infographic-dark-ticket-cn")
+	if err != nil {
+		t.Fatalf("Get(image, infographic-dark-ticket-cn) error = %v", err)
+	}
+	if spec.Archetype != "infographic" {
+		t.Fatalf("Archetype = %q", spec.Archetype)
+	}
+	if !containsTag(spec.Tags, "ticket") || !containsTag(spec.Tags, "dark") {
+		t.Fatalf("Tags = %#v", spec.Tags)
+	}
+	if spec.Metadata["author"] != "geekjourneyx" || spec.Metadata["provenance"] != "original" {
+		t.Fatalf("Metadata = %#v", spec.Metadata)
+	}
+	if !strings.Contains(spec.Template, "21:9") {
+		t.Fatalf("Template = %q", spec.Template)
+	}
+}
+
+func TestBuiltinHanddrawnSketchnotePromptIsDiscoverable(t *testing.T) {
+	ResetDefaultCatalogForTests()
+	t.Chdir(t.TempDir())
+
+	cat, err := DefaultCatalog()
+	if err != nil {
+		t.Fatalf("DefaultCatalog() error = %v", err)
+	}
+
+	spec, err := cat.Get("image", "infographic-handdrawn-sketchnote")
+	if err != nil {
+		t.Fatalf("Get(image, infographic-handdrawn-sketchnote) error = %v", err)
+	}
+	if spec.Archetype != "infographic" {
+		t.Fatalf("Archetype = %q", spec.Archetype)
+	}
+	if !containsTag(spec.Tags, "sketchnote") || !containsTag(spec.Tags, "handdrawn") {
+		t.Fatalf("Tags = %#v", spec.Tags)
+	}
+	if spec.Metadata["author"] != "geekjourneyx" || spec.Metadata["provenance"] != "original" {
+		t.Fatalf("Metadata = %#v", spec.Metadata)
+	}
+	if !strings.Contains(spec.Template, "图文并茂") {
+		t.Fatalf("Template = %q", spec.Template)
+	}
+}
