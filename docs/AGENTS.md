@@ -48,6 +48,14 @@ Treat these commands as the source of truth for:
 1. Keep the version source singular and explicit when the repository has one.
 2. Keep install scripts, release notes, changelog, and release assets aligned.
 3. If the repository does not yet provide a workflow or release gate, document the gap instead of inventing it.
+4. Release work is not complete until these are explicitly re-audited and aligned:
+   - `.claude-plugin/marketplace.json`
+   - `skills/md2wechat/SKILL.md`
+   - `platforms/openclaw/md2wechat/SKILL.md`
+   - `skills/md2wechat/scripts/run.sh`
+   - `scripts/install.sh`
+   - `scripts/install-openclaw.sh`
+5. If any of the files above still carry an old version, stale release URL, stale maintainer identity, or outdated command examples, block the release and fix them before tagging.
 
 ## Documentation Discipline
 

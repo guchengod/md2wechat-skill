@@ -79,6 +79,8 @@ grep -r "config" internal/config/
 |------|------|------|
 | `VERSION` | 文件内容 | `x.y.z` |
 | `skills/md2wechat/scripts/run.sh` | 默认版本回退值 | `x.y.z` |
+| `.claude-plugin/marketplace.json` | plugin version / owner / author | `x.y.z` / 当前维护者身份 |
+| `platforms/openclaw/md2wechat/SKILL.md` | `metadata.openclaw.install[*].url` | 固定版本 release 资源 |
 | `CHANGELOG.md` | 新版本章节标题 | `## [x.y.z] - YYYY-MM-DD` |
 | `CHANGELOG.md` | 版本历史表格 | 新增一行 |
 
@@ -86,9 +88,17 @@ grep -r "config" internal/config/
 # 快速检查版本号一致性
 echo "=== 版本号检查 ==="
 echo "VERSION: $(cat VERSION)"
-echo "run.sh fallback: $(grep 'fallbackVersion' skills/md2wechat/scripts/run.sh | head -1)"
+echo "run.sh fallback: $(grep \"printf '\" skills/md2wechat/scripts/run.sh | tail -1)"
+echo ".claude-plugin: $(grep '\"version\"' .claude-plugin/marketplace.json | head -1)"
+echo "openclaw install URLs: $(grep 'releases/download/v' platforms/openclaw/md2wechat/SKILL.md | head -1)"
 echo "CHANGELOG.md: $(grep '## \[' CHANGELOG.md | head -1)"
 ```
+
+**强制规则：**
+- 发版前必须显式审校 `.claude-plugin/marketplace.json`
+- 发版前必须显式审校 `skills/md2wechat/SKILL.md` 与 `platforms/openclaw/md2wechat/SKILL.md`
+- 发版前必须显式审校 `skills/md2wechat/scripts/run.sh`、`scripts/install.sh`、`scripts/install-openclaw.sh`
+- 如果这些文件中的版本、下载 URL、命令示例、维护者信息没有同步，本次发布不能算完成
 
 ### 3. 文档规范检查
 

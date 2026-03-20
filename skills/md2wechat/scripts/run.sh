@@ -37,7 +37,7 @@ get_version() {
         return 0
     fi
 
-    printf '1.11.1\n'
+    printf '2.0.0\n'
 }
 
 VERSION="$(get_version)"
