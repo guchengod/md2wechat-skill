@@ -49,7 +49,15 @@ Expected one of:
   - ~/.openclaw/tools/md2wechat/bin/md2wechat
   - md2wechat on PATH
 
-Install or reinstall the OpenClaw skill package so the runtime is provisioned first.
+clawhub install md2wechat currently installs only the skill shell and may not provision the runtime.
+Install the fixed-version OpenClaw bundle and runtime first, for example:
+
+  export MD2WECHAT_RELEASE_BASE_URL="https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.0"
+  curl -fsSL "${MD2WECHAT_RELEASE_BASE_URL}/install-openclaw.sh" | bash
+
+Or manually place the runtime at:
+  ~/.openclaw/tools/md2wechat/md2wechat
+
 You can also set MD2WECHAT_OPENCLAW_RUNTIME=/absolute/path/to/md2wechat.
 EOF
         exit 1

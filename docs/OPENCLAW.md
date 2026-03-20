@@ -58,14 +58,14 @@ Your assistant. Your machine. Your rules.
 
 ### 方式一：ClawHub 安装
 
-如果你已安装 `clawhub` CLI，这是最简单的方式：
+如果你已安装 `clawhub` CLI，这是最简单的 skill 壳安装方式：
 
 ```bash
 # 安装 OpenClaw 专用 md2wechat skill 包
 clawhub install md2wechat
 ```
 
-当前 ClawHub 路径会暴露结构化安装资源；完整、可验证的安装主线仍建议使用下面的固定版本 installer。
+当前 ClawHub 路径只会安装 skill 壳到 OpenClaw workspace，**不保证自动 provision `md2wechat` runtime**。完整、可验证的安装主线仍建议使用下面的固定版本 installer。
 
 **没有 clawhub？先安装它：**
 

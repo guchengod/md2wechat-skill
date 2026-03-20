@@ -6,56 +6,57 @@ metadata: {"openclaw":{"emoji":"📝","homepage":"https://github.com/geekjourney
 
 # md2wechat for OpenClaw
 
-透明披露：
+Transparency:
 
-- 会读取本地 Markdown 文件和本地图片。
-- 可能把处理后的图片和 HTML 上传到微信草稿箱或素材接口。
-- 可能调用外部图像服务来生成图片或补图。
-- 草稿上传需要 `WECHAT_APPID` 和 `WECHAT_SECRET`。
-- 图片生成通常还需要 `IMAGE_API_KEY`，以及可选的 `IMAGE_PROVIDER` / `IMAGE_API_BASE`。
+- Reads local Markdown files and local images.
+- May upload generated images and HTML to WeChat draft and media endpoints.
+- May call external image-generation services to create or enrich images.
+- Draft upload requires `WECHAT_APPID` and `WECHAT_SECRET`.
+- Image generation usually also requires `IMAGE_API_KEY`, plus optional `IMAGE_PROVIDER` / `IMAGE_API_BASE`.
 
-配置入口：
+Configuration entry point:
 
-- 默认先检查 `~/.config/md2wechat/config.yaml`
-- 如需切换 API 域名、图片 provider 或确认默认模式，先看仓库文档 `docs/CONFIG.md`
-- 未显式传 `--mode` 时，`convert` 默认仍走 `api`
+- Check `~/.config/md2wechat/config.yaml` first.
+- To change the API domain, image provider, or confirm default mode behavior, see `docs/CONFIG.md` in the repository.
+- When `--mode` is not provided explicitly, `convert` still defaults to `api`.
 
-## 运行边界
+## Runtime Boundary
 
-- 本 skill 只执行已经安装好的 `md2wechat` runtime。
-- 优先查找 `~/.openclaw/tools/md2wechat` 下的 runtime，然后查找 `PATH`。
-- 运行时不会下载二进制，不会写入缓存下载器，也不会静默回退到远程拉取。
-- `metadata.openclaw.install` 当前提供的是固定版本安装资源与 installer 入口，真正完整的自动安装主线仍以 `install-openclaw.sh` 为准。
+- This skill only executes an already-installed `md2wechat` runtime.
+- It looks for the runtime under `~/.openclaw/tools/md2wechat` first, then falls back to `PATH`.
+- It does not download binaries at execution time, does not use a cache bootstrapper, and does not silently fall back to remote downloads.
+- `clawhub install md2wechat` currently installs only the skill shell and does **not** guarantee automatic `md2wechat` runtime provisioning.
+- `metadata.openclaw.install` exposes fixed-version install resources and installer entry points; the complete and verifiable installation path is still the fixed-version `install-openclaw.sh` installer.
 
-## 推荐流程
+## Recommended Flow
 
-1. 先通过固定版本 OpenClaw installer 完成 skill 和 runtime 安装。
-2. 先用发现命令确认当前实例支持的能力和资源：
+1. Use the fixed-version OpenClaw installer to install both the skill and the runtime. Do not treat `clawhub install md2wechat` as a complete installation path.
+2. Use discovery commands first to confirm what the current instance supports:
    - `md2wechat capabilities --json`
    - `md2wechat providers list --json`
    - `md2wechat themes list --json`
    - `md2wechat prompts list --json`
    - `md2wechat prompts list --kind image --archetype cover --json`
-3. 再执行以下任务：
+3. Then run the task you actually need:
    - `convert <file.md> --preview`
    - `convert <file.md> --draft --cover <cover.jpg>`
    - `generate_cover --article <file.md>`
    - `generate_infographic --article <file.md> --preset infographic-comparison`
    - `generate_image --preset cover-hero --article <file.md> --model <image-model>`
    - `create_image_post -m <file.md> -t "<title>"`
-4. 如果要使用 AI 转换或 AI 图片，再补齐图像服务配置。
+4. If you need AI conversion or AI image generation, add the image-service configuration before running those commands.
 
-当任务依赖具体资源时，先检查再执行：
+When a task depends on a specific resource, inspect it first:
 
 - `md2wechat providers show <name> --json`
 - `md2wechat themes show <name> --json`
 - `md2wechat prompts show <name> --kind <kind> --json`
 - `md2wechat prompts render <name> --kind <kind> --var KEY=VALUE --json`
 
-高频图片工作流建议：
+Recommended image workflow:
 
-- 封面图优先用 `generate_cover`
-- 信息图优先用 `generate_infographic`
-- 只有在没有合适 preset 时，再直接用 `generate_image "raw prompt"`
+- Prefer `generate_cover` for article covers.
+- Prefer `generate_infographic` for infographic-style visual summaries.
+- Only fall back to `generate_image "raw prompt"` when no suitable preset exists.
 
 See [references/runtime.md](references/runtime.md) for the runtime lookup contract.

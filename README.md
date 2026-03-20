@@ -1160,7 +1160,7 @@ OpenClaw 使用独立的 `platforms/openclaw/md2wechat/` skill 包，和面向 C
 
 ### 安装方式
 
-#### 方式一：ClawHub 安装（推荐）
+#### 方式一：ClawHub 安装（仅安装 skill 壳）
 
 ```bash
 # 安装 clawhub CLI（如果还没有）
@@ -1171,7 +1171,7 @@ clawhub login
 clawhub install md2wechat
 ```
 
-当前 ClawHub 路径会暴露结构化安装资源；完整、可验证的安装主线仍建议使用下一种固定版本 installer。
+当前 ClawHub 路径只会安装 skill 壳到 OpenClaw workspace，**不保证自动 provision `md2wechat` runtime**。完整、可验证的安装主线仍建议使用下一种固定版本 installer。
 
 #### 方式二：一键脚本安装
 
