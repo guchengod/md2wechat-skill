@@ -124,7 +124,7 @@ jobs:
         env:
           VERSION: ${{ needs.build-release.outputs.version }}
         run: |
-          bundle_dir="${GITHUB_WORKSPACE}/release-artifact/release-bundle"
+          bundle_dir="${GITHUB_WORKSPACE}/release-artifact"
           binary="${bundle_dir}/md2wechat-linux-amd64"
 
           chmod +x "$binary"
@@ -136,7 +136,7 @@ jobs:
         env:
           VERSION: ${{ needs.build-release.outputs.version }}
         run: |
-          bundle_dir="${GITHUB_WORKSPACE}/release-artifact/release-bundle"
+          bundle_dir="${GITHUB_WORKSPACE}/release-artifact"
           install_dir="$(mktemp -d)"
 
           MD2WECHAT_VERSION="$VERSION" \
@@ -150,7 +150,7 @@ jobs:
         env:
           VERSION: ${{ needs.build-release.outputs.version }}
         run: |
-          bundle_dir="${GITHUB_WORKSPACE}/release-artifact/release-bundle"
+          bundle_dir="${GITHUB_WORKSPACE}/release-artifact"
           home_dir="$(mktemp -d)"
 
           mkdir -p "${home_dir}/.openclaw"
@@ -171,7 +171,7 @@ jobs:
           VERSION: ${{ needs.build-release.outputs.version }}
         shell: pwsh
         run: |
-          $bundleDir = Join-Path $env:GITHUB_WORKSPACE 'release-artifact/release-bundle'
+          $bundleDir = Join-Path $env:GITHUB_WORKSPACE 'release-artifact'
           $installDir = Join-Path $env:RUNNER_TEMP 'md2wechat-install-ps1'
 
           $env:MD2WECHAT_VERSION = $env:VERSION
@@ -206,16 +206,16 @@ jobs:
           tag_name: v${{ needs.build-release.outputs.version }}
           name: v${{ needs.build-release.outputs.version }}
           files: |
-            release-artifact/release-bundle/md2wechat-linux-amd64
-            release-artifact/release-bundle/md2wechat-linux-arm64
-            release-artifact/release-bundle/md2wechat-darwin-amd64
-            release-artifact/release-bundle/md2wechat-darwin-arm64
-            release-artifact/release-bundle/md2wechat-windows-amd64.exe
-            release-artifact/release-bundle/install.sh
-            release-artifact/release-bundle/install.ps1
-            release-artifact/release-bundle/install-openclaw.sh
-            release-artifact/release-bundle/md2wechat-openclaw-skill.tar.gz
-            release-artifact/release-bundle/checksums.txt
+            release-artifact/md2wechat-linux-amd64
+            release-artifact/md2wechat-linux-arm64
+            release-artifact/md2wechat-darwin-amd64
+            release-artifact/md2wechat-darwin-arm64
+            release-artifact/md2wechat-windows-amd64.exe
+            release-artifact/install.sh
+            release-artifact/install.ps1
+            release-artifact/install-openclaw.sh
+            release-artifact/md2wechat-openclaw-skill.tar.gz
+            release-artifact/checksums.txt
           draft: false
           prerelease: false
           generate_release_notes: true
