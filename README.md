@@ -804,6 +804,8 @@ md2wechat generate_infographic --article article.md --preset infographic-compari
 | **ModelScope** | `modelscope` 或 `ms` | 阿里 ModelScope，免费额度 | [modelscope.cn](https://modelscope.cn/my/myaccesstoken) |
 | **TuZi** | `tuzi` | 国产 API，稳定快速 | [tu-zi.com](https://api.tu-zi.com) |
 | **OpenAI** | `openai` | 官方 OpenAI | [platform.openai.com](https://platform.openai.com) |
+| **OpenRouter** | `openrouter` 或 `or` | 多模型聚合接口，支持 Gemini / Flux 等 | [openrouter.ai](https://openrouter.ai) |
+| **Google Gemini** | `gemini` 或 `google` | 官方 Gemini 图片生成 API | [ai.google.dev](https://ai.google.dev/gemini-api/docs/image-generation) |
 
 **配置方式**（环境变量或配置文件）：
 
