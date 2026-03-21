@@ -224,7 +224,7 @@ command -v md2wechat
 
 ---
 
-## 推荐直接发给大模型的话
+## 推荐直接发给 Agent 的话
 
 如果你不想自己逐步敲命令，可以直接把下面这段发给 Claudian、Claude、GPT 或其他 Agent：
 

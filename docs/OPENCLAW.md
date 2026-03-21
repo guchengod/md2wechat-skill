@@ -16,7 +16,7 @@
   - [方式二：先安装 CLI（优先 Homebrew）](#方式二先安装-cli优先-homebrew)
   - [方式三：一键脚本安装](#方式三一键脚本安装)
   - [方式四：手动安装](#方式四手动安装)
-  - [发给大模型的对话脚本](#发给大模型的对话脚本)
+  - [发给 Agent 的对话脚本](#发给-agent-的对话脚本)
 - [配置说明](#配置说明)
 - [验证安装](#验证安装)
 - [常见问题](#常见问题)
@@ -52,6 +52,7 @@ Your assistant. Your machine. Your rules.
 - 官网：[openclaw.ai](https://openclaw.ai/)
 - 文档：[docs.openclaw.ai](https://docs.openclaw.ai/)
 - 技能市场：[clawhub.ai](https://clawhub.ai/)
+- 当前技能页面：[clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
 - GitHub：[github.com/openclaw/openclaw](https://github.com/openclaw/openclaw)
 
 ---
@@ -60,21 +61,18 @@ Your assistant. Your machine. Your rules.
 
 ### 方式一：ClawHub 安装（仅安装 skill 壳）
 
-如果你已安装 `clawhub` CLI，这是最简单的 skill 壳安装方式：
+这是当前最直接的官方 skill 壳安装方式：
 
 ```bash
 # 安装 OpenClaw 专用 md2wechat skill 包
-clawhub install md2wechat
+npx clawhub@latest install md2wechat
 ```
 
 当前 ClawHub 路径只会安装 skill 壳到 OpenClaw workspace，**不保证自动安装 `md2wechat` CLI**。完整、可验证的安装主线仍建议使用下面的固定版本 installer。
 
-**没有 clawhub？先安装它：**
+如果你更习惯从网页进入当前技能页面，可以直接打开：
 
-```bash
-npm install -g clawhub
-clawhub login
-```
+- [clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
 
 ---
 
@@ -92,7 +90,7 @@ brew install geekjourneyx/tap/md2wechat
 go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@latest
 ```
 
-这两种方式只安装 CLI，**不会自动把 OpenClaw skill 壳写入 `~/.openclaw/skills/md2wechat/`**。如果你还没装 skill 壳，请继续使用上面的 `clawhub install md2wechat`，或者直接使用下面的一键脚本安装。
+这两种方式只安装 CLI，**不会自动把 OpenClaw skill 壳写入 `~/.openclaw/skills/md2wechat/`**。如果你还没装 skill 壳，请继续使用上面的 `npx clawhub@latest install md2wechat`，或者直接使用下面的一键脚本安装。
 
 ---
 
@@ -111,9 +109,9 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 - 安装 CLI 到用户级环境路径，默认是 `~/.local/bin/md2wechat`
 - 提示后续直接执行 `md2wechat config init`
 
-### 发给大模型的对话脚本
+### 发给 Agent 的对话脚本
 
-如果你不想自己一步步敲命令，可以直接把下面的话发给 OpenClaw、Claude、GPT 或其他大模型：
+如果你不想自己一步步敲命令，可以直接把下面的话发给 OpenClaw、Claude、GPT 或其他 Agent：
 
 ```text
 请帮我安装 OpenClaw 版 md2wechat，并验证 skill 和 CLI 都可用。

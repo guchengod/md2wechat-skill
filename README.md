@@ -46,9 +46,9 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
 
-### 直接发给大模型
+### 直接发给 Agent
 
-如果你不想自己组织命令，可以直接把下面的话发给 Claude Code / Codex / OpenCode：
+如果你不想自己组织命令，可以直接把下面的话发给 Claude Code / Codex / OpenCode 等 Agent：
 
 ```text
 请帮我安装 md2wechat 并验证可用。按这个顺序执行：
@@ -1331,6 +1331,10 @@ md2wechat 现已支持 [OpenClaw](https://openclaw.ai/) 平台！
 
 OpenClaw 使用独立的 `platforms/openclaw/md2wechat/` skill 包，和面向 Claude Code / Codex / OpenCode 的 `skills/md2wechat/` 分开维护。OpenClaw 现在也直接依赖已安装到环境路径里的 `md2wechat` CLI，不再保留 skill 内部 runtime wrapper。
 
+OpenClaw 用户也可以直接从技能页面进入：
+
+- [ClawHub 页面：clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
+
 ### 什么是 OpenClaw？
 
 [OpenClaw](https://openclaw.ai/) 是一个开源的 AI Agent 平台，**在你的设备上运行**，通过你已经在用的聊天应用（WhatsApp、Telegram、Discord、Slack）来操控 AI 助手。
@@ -1342,15 +1346,15 @@ OpenClaw 使用独立的 `platforms/openclaw/md2wechat/` skill 包，和面向 C
 #### 方式一：ClawHub 安装（仅安装 skill 壳）
 
 ```bash
-# 安装 clawhub CLI（如果还没有）
-npm install -g clawhub
-clawhub login
-
 # 安装 OpenClaw 专用 md2wechat skill 包
-clawhub install md2wechat
+npx clawhub@latest install md2wechat
 ```
 
 当前 ClawHub 路径只会安装 skill 壳到 OpenClaw workspace，**不保证自动安装 `md2wechat` CLI**。完整、可验证的安装主线仍建议使用下一种固定版本 installer。
+
+如果你更习惯先从网页进入，再决定是否安装，可以直接打开：
+
+- [ClawHub 页面：clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
 
 #### 方式二：先安装 CLI（优先 Homebrew）
 
@@ -1360,7 +1364,7 @@ clawhub install md2wechat
 brew install geekjourneyx/tap/md2wechat
 ```
 
-这个方式只安装 `md2wechat` CLI，不会自动写入 `~/.openclaw/skills/md2wechat/`。如果你还没装 skill 壳，请继续执行 `clawhub install md2wechat`，或者直接用下一种一键脚本。
+这个方式只安装 `md2wechat` CLI，不会自动写入 `~/.openclaw/skills/md2wechat/`。如果你还没装 skill 壳，请继续执行 `npx clawhub@latest install md2wechat`，或者直接用下一种一键脚本。
 
 如果你已经有 Go 环境，也可以执行：
 
