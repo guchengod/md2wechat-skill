@@ -1853,13 +1853,11 @@ EOF
 - X（Twitter）：https://x.com/seekjourney
 - 公众号：极客杰尼
 
-关注公众号，获取更多 AI 编程、AI 工具与 AI 出海建站的实战分享：
+如需咨询，扫描公众号二维码联系，备注「API咨询」：
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/geekjourneyx/awesome-developer-go-sail/main/docs/assets/qrcode.jpg" alt="公众号：极客杰尼" width="180" />
 </p>
-
-如需咨询，扫描底部公众号二维码联系，备注「API咨询」。
 
 ## Star History
 
