@@ -50,6 +50,58 @@ func TestValidateConvertConfigRequiresAPIKeyInAPIMode(t *testing.T) {
 	}
 }
 
+func TestValidateConvertConfigRejectsConflictingCoverInputs(t *testing.T) {
+	oldCfg, oldMode := cfg, convertMode
+	oldUpload, oldDraft := convertUpload, convertDraft
+	oldCover, oldCoverMediaID := convertCoverImage, convertCoverMediaID
+	t.Cleanup(func() {
+		cfg = oldCfg
+		convertMode = oldMode
+		convertUpload = oldUpload
+		convertDraft = oldDraft
+		convertCoverImage = oldCover
+		convertCoverMediaID = oldCoverMediaID
+	})
+
+	cfg = &config.Config{WechatAppID: "appid", WechatSecret: "secret"}
+	convertMode = "ai"
+	convertUpload = false
+	convertDraft = true
+	convertCoverImage = "/tmp/cover.jpg"
+	convertCoverMediaID = "existing-cover-id"
+
+	err := validateConvertConfig()
+	if err == nil || !strings.Contains(err.Error(), "--cover and --cover-media-id are mutually exclusive") {
+		t.Fatalf("validateConvertConfig() error = %v", err)
+	}
+}
+
+func TestValidateConvertConfigRejectsURLLikeCoverMediaID(t *testing.T) {
+	oldCfg, oldMode := cfg, convertMode
+	oldUpload, oldDraft := convertUpload, convertDraft
+	oldCover, oldCoverMediaID := convertCoverImage, convertCoverMediaID
+	t.Cleanup(func() {
+		cfg = oldCfg
+		convertMode = oldMode
+		convertUpload = oldUpload
+		convertDraft = oldDraft
+		convertCoverImage = oldCover
+		convertCoverMediaID = oldCoverMediaID
+	})
+
+	cfg = &config.Config{WechatAppID: "appid", WechatSecret: "secret"}
+	convertMode = "ai"
+	convertUpload = false
+	convertDraft = true
+	convertCoverImage = ""
+	convertCoverMediaID = "https://mmbiz.qpic.cn/example"
+
+	err := validateConvertConfig()
+	if err == nil || !strings.Contains(err.Error(), "--cover-media-id expects a WeChat media_id, not a URL") {
+		t.Fatalf("validateConvertConfig() error = %v", err)
+	}
+}
+
 func TestCreateWeChatDraftRequiresCoverImage(t *testing.T) {
 	oldCfg, oldLog := cfg, log
 	oldMode, oldTheme, oldAPIKey := convertMode, convertTheme, convertAPIKey

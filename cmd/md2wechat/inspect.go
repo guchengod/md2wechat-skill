@@ -18,6 +18,7 @@ var (
 	inspectAuthor         string
 	inspectDigest         string
 	inspectCover          string
+	inspectCoverMediaID   string
 	inspectUpload         bool
 	inspectDraft          bool
 	inspectStrict         bool
@@ -56,6 +57,7 @@ func init() {
 	inspectCmd.Flags().StringVar(&inspectAuthor, "author", "", "Override article author")
 	inspectCmd.Flags().StringVar(&inspectDigest, "digest", "", "Override article digest")
 	inspectCmd.Flags().StringVar(&inspectCover, "cover", "", "Cover image path to validate draft readiness")
+	inspectCmd.Flags().StringVar(&inspectCoverMediaID, "cover-media-id", "", "Existing WeChat cover media_id to validate draft readiness")
 	inspectCmd.Flags().BoolVar(&inspectUpload, "upload", false, "Evaluate upload readiness")
 	inspectCmd.Flags().BoolVar(&inspectDraft, "draft", false, "Evaluate draft readiness")
 	inspectCmd.Flags().BoolVar(&inspectStrict, "strict", false, "Exit with status 2 if error-level checks are found")
@@ -77,6 +79,7 @@ func runInspect(markdownFile string) (*inspectpkg.Result, error) {
 		AuthorOverride:  inspectAuthor,
 		DigestOverride:  inspectDigest,
 		CoverImagePath:  inspectCover,
+		CoverMediaID:    inspectCoverMediaID,
 		UploadRequested: inspectUpload,
 		DraftRequested:  inspectDraft,
 		Config:          cfg,

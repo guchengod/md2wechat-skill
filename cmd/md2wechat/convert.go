@@ -84,6 +84,7 @@ var (
 	convertDraft          bool
 	convertSaveDraft      string
 	convertCoverImage     string // 封面图片路径
+	convertCoverMediaID   string // 已存在的微信封面素材 media_id
 	convertTitle          string
 	convertAuthor         string
 	convertDigest         string
@@ -103,6 +104,7 @@ func init() {
 	convertCmd.Flags().BoolVar(&convertDraft, "draft", false, "Create WeChat draft after conversion")
 	convertCmd.Flags().StringVar(&convertSaveDraft, "save-draft", "", "Save draft JSON to file")
 	convertCmd.Flags().StringVar(&convertCoverImage, "cover", "", "Cover image path for draft (required when using --draft)")
+	convertCmd.Flags().StringVar(&convertCoverMediaID, "cover-media-id", "", "Existing WeChat cover media_id for draft (mutually exclusive with --cover)")
 	convertCmd.Flags().StringVar(&convertTitle, "title", "", "Override article title (max 32 characters)")
 	convertCmd.Flags().StringVar(&convertAuthor, "author", "", "Override article author (max 16 characters)")
 	convertCmd.Flags().StringVar(&convertDigest, "digest", "", "Override article digest (max 128 characters)")
@@ -173,6 +175,7 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		OutputFile:     convertOutput,
 		SaveDraftPath:  convertSaveDraft,
 		CoverImagePath: convertCoverImage,
+		CoverMediaID:   strings.TrimSpace(convertCoverMediaID),
 	}
 
 	output, err := service.Convert(input)
@@ -309,8 +312,19 @@ func validateConvertConfig() error {
 			return wrapCLIError(codeConfigInvalid, err, err.Error())
 		}
 	}
+	if strings.TrimSpace(convertCoverImage) != "" && strings.TrimSpace(convertCoverMediaID) != "" {
+		return newCLIError(codeConvertInvalid, "--cover and --cover-media-id are mutually exclusive")
+	}
+	if strings.TrimSpace(convertCoverMediaID) != "" && looksLikeURL(convertCoverMediaID) {
+		return newCLIError(codeConvertInvalid, "--cover-media-id expects a WeChat media_id, not a URL")
+	}
 
 	return nil
+}
+
+func looksLikeURL(value string) bool {
+	value = strings.TrimSpace(strings.ToLower(value))
+	return strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://")
 }
 
 func validateConvertMetadata(title, author, digest string) error {

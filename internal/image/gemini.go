@@ -207,7 +207,7 @@ func (p *GeminiProvider) handleError(err error) error {
 			Provider: p.Name(),
 			Code:     "unauthorized",
 			Message:  "Google API Key 无效或权限不足",
-			Hint:     "请检查 GOOGLE_API_KEY 或 IMAGE_API_KEY 是否正确，前往 https://aistudio.google.com/apikey 获取",
+			Hint:     "请检查 IMAGE_API_KEY 是否正确，前往 https://aistudio.google.com/apikey 获取",
 			Original: err,
 		}
 	}

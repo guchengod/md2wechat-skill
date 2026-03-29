@@ -46,16 +46,22 @@ md2wechat --help
 brew install geekjourneyx/tap/md2wechat
 ```
 
+如果你已经有稳定可用的 Node/npm 环境，也可以：
+
+```bash
+npm install -g @geekjourneyx/md2wechat
+```
+
 如果你已经有稳定可用的 Go 环境，也可以：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
 ```
 
 如果以上都不适合，再走固定版本安装脚本：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 ```
 
 安装脚本默认会把 CLI 放到：
@@ -96,16 +102,22 @@ brew install geekjourneyx/tap/md2wechat
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
 
+如果你已经有 Node/npm 环境，也可以把第一步改成：
+
+```bash
+npm install -g @geekjourneyx/md2wechat
+```
+
 如果你已经有 Go 环境，再把第一步改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
 ```
 
 如果以上都不适合，再把第一步改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 ```
 
 如果你懒得自己操作，也可以直接把下面的话发给 Claude Code / Codex / OpenCode：
@@ -114,8 +126,8 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 请先安装 md2wechat CLI，再安装 md2wechat skill，并验证版本和能力发现都正常。
 执行：
 1. 如果我是 mac 用户，先运行：brew install geekjourneyx/tap/md2wechat
-2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
-3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
+3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 4. 运行：npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 5. 如果我是通过 install.sh 安装的，再执行：export PATH="$HOME/.local/bin:$PATH"
 6. md2wechat version --json
@@ -129,7 +141,7 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 ```text
 请帮我安装 OpenClaw 版 md2wechat，并验证 skill 和 CLI 都可用。
 执行：
-1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install-openclaw.sh | bash
+1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install-openclaw.sh | bash
 2. 先执行：export PATH="$HOME/.local/bin:$PATH"
 3. md2wechat version --json
 4. md2wechat config init
@@ -148,10 +160,18 @@ md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
 
+如果你更习惯 npm，也可以把第一步改成：
+
+```bash
+npm install -g @geekjourneyx/md2wechat
+md2wechat version --json
+npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
+```
+
 如果你已经有 Go 环境，再改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
@@ -159,7 +179,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果以上都不适合，再改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
@@ -544,6 +564,7 @@ md2wechat inspect article.md
 
 - `md2wechat convert article.md --upload`
 - `md2wechat convert article.md --draft --cover cover.jpg`
+- `md2wechat convert article.md --draft --cover-media-id PERMANENT_MEDIA_ID`
 
 纯：
 
@@ -634,6 +655,12 @@ ip xxx.xxx.xxx.xxx not in whitelist
 md2wechat config validate
 md2wechat upload_image cover.png --json
 md2wechat test-draft --json draft.html cover.png
+```
+
+如果你已经有可复用的微信永久封面素材，也可以在正式转换时直接传：
+
+```bash
+md2wechat convert article.md --draft --cover-media-id PERMANENT_MEDIA_ID --json
 ```
 
 前两步都过了，再测：

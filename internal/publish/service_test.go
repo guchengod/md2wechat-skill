@@ -254,6 +254,56 @@ func TestServiceConvertProcessesAssetsAndCreatesDraft(t *testing.T) {
 	}
 }
 
+func TestServiceConvertUsesExistingCoverMediaIDWithoutUploadingCover(t *testing.T) {
+	svc := NewService(
+		zap.NewNop(),
+		&fakeMarkdownConverter{
+			result: &converter.ConvertResult{
+				Mode:    converter.ModeAPI,
+				Theme:   "default",
+				Success: true,
+				Status:  action.StatusCompleted,
+				Action:  action.ActionConvert,
+				HTML:    "<p>body</p>",
+			},
+		},
+		&fakeAssetProcessor{},
+		&fakeDraftCreator{result: &DraftResult{MediaID: "draft-2"}},
+		func(path string) (string, error) {
+			t.Fatalf("uploadCover should not be called when cover_media_id is provided")
+			return "", nil
+		},
+	)
+
+	output, err := svc.Convert(&ConvertInput{
+		Source: ArticleSource{
+			Path:     "article.md",
+			Markdown: "# 标题\n",
+			Metadata: Metadata{Title: "标题"},
+		},
+		Intent: PublishIntent{
+			Mode:        "api",
+			CreateDraft: true,
+		},
+		ConvertRequest: &converter.ConvertRequest{
+			Markdown: "# 标题\n",
+			Mode:     converter.ModeAPI,
+			Theme:    "default",
+			APIKey:   "api-key",
+		},
+		CoverMediaID: "existing-cover-id",
+	})
+	if err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	if output.Artifact.CoverMediaID != "existing-cover-id" {
+		t.Fatalf("cover media id = %q", output.Artifact.CoverMediaID)
+	}
+	if output.Artifact.DraftMediaID != "draft-2" {
+		t.Fatalf("draft media id = %q", output.Artifact.DraftMediaID)
+	}
+}
+
 func TestServiceConvertReturnsTypedStageErrors(t *testing.T) {
 	svc := NewService(
 		zap.NewNop(),

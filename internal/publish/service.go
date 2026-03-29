@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/geekjourneyx/md2wechat-skill/internal/converter"
 	"github.com/geekjourneyx/md2wechat-skill/internal/image"
@@ -41,6 +42,7 @@ type ConvertInput struct {
 	OutputFile     string
 	SaveDraftPath  string
 	CoverImagePath string
+	CoverMediaID   string
 }
 
 // ConvertOutput is the normalized publish result returned by the service.
@@ -134,20 +136,29 @@ func (s *Service) Convert(input *ConvertInput) (*ConvertOutput, error) {
 		if s.drafts == nil {
 			return nil, fmt.Errorf("draft creator is required")
 		}
-		if input.CoverImagePath == "" {
+		coverMediaID := input.CoverMediaID
+		if strings.TrimSpace(input.CoverImagePath) != "" && strings.TrimSpace(coverMediaID) != "" {
 			return nil, &DraftError{
-				Message: "创建草稿需要封面图片",
-				Hint: "请使用 --cover 参数指定封面图片路径，例如: --cover /path/to/cover.jpg\n" +
-					"或者先上传封面图片到微信素材库: md2wechat upload_image /path/to/cover.jpg",
+				Message: "创建草稿时 --cover 和 --cover-media-id 不能同时使用",
+				Hint:    "请二选一：提供本地封面图片路径，或提供已存在的微信永久素材 media_id",
 			}
 		}
-		if s.uploadCover == nil {
-			return nil, fmt.Errorf("cover uploader is required")
+		if strings.TrimSpace(input.CoverImagePath) == "" && strings.TrimSpace(coverMediaID) == "" {
+			return nil, &DraftError{
+				Message: "创建草稿需要封面图片",
+				Hint: "请使用 --cover 参数指定本地封面图片路径，例如: --cover /path/to/cover.jpg\n" +
+					"或者使用 --cover-media-id 提供已存在的微信永久素材 media_id",
+			}
 		}
-
-		coverMediaID, err := s.uploadCover(input.CoverImagePath)
-		if err != nil {
-			return nil, &DraftCreateError{Err: fmt.Errorf("上传封面图片失败: %w", err)}
+		if strings.TrimSpace(coverMediaID) == "" {
+			if s.uploadCover == nil {
+				return nil, fmt.Errorf("cover uploader is required")
+			}
+			var err error
+			coverMediaID, err = s.uploadCover(input.CoverImagePath)
+			if err != nil {
+				return nil, &DraftCreateError{Err: fmt.Errorf("上传封面图片失败: %w", err)}
+			}
 		}
 		output.CoverMediaID = coverMediaID
 		output.Artifact.CoverMediaID = coverMediaID

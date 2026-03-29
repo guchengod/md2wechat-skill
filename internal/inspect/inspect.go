@@ -32,6 +32,7 @@ type Input struct {
 	AuthorOverride  string
 	DigestOverride  string
 	CoverImagePath  string
+	CoverMediaID    string
 	UploadRequested bool
 	DraftRequested  bool
 	Config          *config.Config
@@ -170,7 +171,7 @@ func Run(input *Input) (*Result, error) {
 	result.Checks = buildChecks(input, result)
 	result.Readiness.ConvertReady = convertReadyFor(mode, input.Config) && !hasBlockingCheck(result.Checks, blocksConvert)
 	result.Readiness.UploadReady = uploadReadyFor(input.Config) && result.Readiness.ConvertReady && !hasBlockingCheck(result.Checks, blocksUpload)
-	result.Readiness.DraftReady = result.Readiness.UploadReady && strings.TrimSpace(input.CoverImagePath) != "" && !hasBlockingCheck(result.Checks, blocksDraft)
+	result.Readiness.DraftReady = result.Readiness.UploadReady && coverConfigured(input) && !hasBlockingCheck(result.Checks, blocksDraft)
 	return result, nil
 }
 
@@ -419,13 +420,31 @@ func buildChecks(input *Input, result *Result) []Check {
 		}
 	}
 
-	if input.DraftRequested && strings.TrimSpace(input.CoverImagePath) == "" {
+	if input.DraftRequested && strings.TrimSpace(input.CoverImagePath) != "" && strings.TrimSpace(input.CoverMediaID) != "" {
+		checks = append(checks, Check{
+			Level:        LevelError,
+			Code:         "CONFLICTING_COVER_INPUTS",
+			Message:      "Draft mode cannot use --cover and --cover-media-id together",
+			Field:        "cover",
+			SuggestedFix: "choose either a local cover path or an existing WeChat media_id",
+		})
+	}
+	if input.DraftRequested && strings.TrimSpace(input.CoverMediaID) != "" && looksLikeURL(input.CoverMediaID) {
+		checks = append(checks, Check{
+			Level:        LevelError,
+			Code:         "COVER_MEDIA_ID_INVALID",
+			Message:      fmt.Sprintf("Cover media_id looks like a URL: %s", input.CoverMediaID),
+			Field:        "cover_media_id",
+			SuggestedFix: "pass a WeChat media_id to --cover-media-id, or use --cover /path/to/cover.jpg for a local file",
+		})
+	}
+	if input.DraftRequested && !coverConfigured(input) {
 		checks = append(checks, Check{
 			Level:        LevelError,
 			Code:         "MISSING_COVER",
-			Message:      "Draft mode requires --cover",
+			Message:      "Draft mode requires --cover or --cover-media-id",
 			Field:        "cover",
-			SuggestedFix: "pass --cover /path/to/cover.jpg",
+			SuggestedFix: "pass --cover /path/to/cover.jpg or --cover-media-id <media_id>",
 		})
 	}
 	if input.DraftRequested && strings.TrimSpace(input.CoverImagePath) != "" {
@@ -478,11 +497,20 @@ func blocksDraft(code string) bool {
 		return true
 	}
 	switch code {
-	case "MISSING_COVER", "COVER_IMAGE_MISSING":
+	case "MISSING_COVER", "COVER_IMAGE_MISSING", "CONFLICTING_COVER_INPUTS", "COVER_MEDIA_ID_INVALID":
 		return true
 	default:
 		return false
 	}
+}
+
+func coverConfigured(input *Input) bool {
+	return strings.TrimSpace(input.CoverImagePath) != "" || strings.TrimSpace(input.CoverMediaID) != ""
+}
+
+func looksLikeURL(value string) bool {
+	value = strings.TrimSpace(strings.ToLower(value))
+	return strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://")
 }
 
 func apiKeyAvailable(cfg *config.Config) bool {

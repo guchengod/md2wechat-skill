@@ -238,7 +238,7 @@ func validateGeminiConfig(cfg *config.Config) error {
 		return &config.ConfigError{
 			Field:   "ImageAPIKey",
 			Message: "使用 Google Gemini 图片服务需要配置 API Key",
-			Hint:    "在配置文件中设置 api.image_key 或环境变量 IMAGE_API_KEY (或 GOOGLE_API_KEY)，前往 https://aistudio.google.com/apikey 获取",
+			Hint:    "在配置文件中设置 api.image_key 或环境变量 IMAGE_API_KEY，前往 https://aistudio.google.com/apikey 获取",
 		}
 	}
 	return nil

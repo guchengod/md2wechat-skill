@@ -28,13 +28,13 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果你已经有稳定可用的 Go 环境，也可以把第一步改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
 ```
 
 如果以上都不适合，再改成固定版本安装脚本：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
@@ -321,6 +321,7 @@ api:
 ```bash
 # 直接创建草稿
 md2wechat convert article.md --draft --cover cover.jpg
+md2wechat convert article.md --draft --cover-media-id PERMANENT_MEDIA_ID
 
 # 先上传图片再创建草稿
 md2wechat convert article.md --upload --draft --cover cover.jpg
@@ -328,7 +329,10 @@ md2wechat convert article.md --upload --draft --cover cover.jpg
 
 说明：
 
-- 创建草稿时必须显式提供 `--cover`
+- 创建草稿时必须显式提供 `--cover` 或 `--cover-media-id`
+- `--cover` 用于本地封面图片路径
+- `--cover-media-id` 用于已经在微信素材库里的永久封面素材 ID
+- `--cover` 和 `--cover-media-id` 互斥，不能同时传
 - 如果需要覆盖标题、作者、摘要，可额外传 `--title`、`--author`、`--digest`
 
 ### 保存草稿 JSON

@@ -716,6 +716,86 @@ func TestRunConvertImageFailureBlocksDraftCreation(t *testing.T) {
 	}
 }
 
+func TestRunConvertDraftUsesCoverMediaIDWithoutUploadingCover(t *testing.T) {
+	oldCfg, oldLog := cfg, log
+	oldMode, oldTheme, oldAPIKey := convertMode, convertTheme, convertAPIKey
+	oldFontSize, oldBackground := convertFontSize, convertBackgroundType
+	oldCustomPrompt, oldOutput := convertCustomPrompt, convertOutput
+	oldPreview, oldUpload, oldDraft := convertPreview, convertUpload, convertDraft
+	oldSaveDraft, oldCover, oldCoverMediaID := convertSaveDraft, convertCoverImage, convertCoverMediaID
+	oldNewConverter, oldNewProcessor := newMarkdownConverter, newImageProcessor
+	oldNewDraftCreator, oldUploadCoverImageFn := newDraftCreator, uploadCoverImageFn
+	t.Cleanup(func() {
+		cfg, log = oldCfg, oldLog
+		convertMode, convertTheme, convertAPIKey = oldMode, oldTheme, oldAPIKey
+		convertFontSize, convertBackgroundType = oldFontSize, oldBackground
+		convertCustomPrompt, convertOutput = oldCustomPrompt, oldOutput
+		convertPreview, convertUpload, convertDraft = oldPreview, oldUpload, oldDraft
+		convertSaveDraft, convertCoverImage, convertCoverMediaID = oldSaveDraft, oldCover, oldCoverMediaID
+		newMarkdownConverter, newImageProcessor = oldNewConverter, oldNewProcessor
+		newDraftCreator, uploadCoverImageFn = oldNewDraftCreator, oldUploadCoverImageFn
+	})
+
+	cfg = &config.Config{
+		WechatAppID:        "appid",
+		WechatSecret:       "secret",
+		MD2WechatAPIKey:    "api-key",
+		DefaultConvertMode: "api",
+		MaxImageWidth:      1920,
+		MaxImageSize:       5 * 1024 * 1024,
+		HTTPTimeout:        30,
+	}
+	log = zap.NewNop()
+
+	convertMode = "api"
+	convertTheme = "default"
+	convertPreview = false
+	convertUpload = false
+	convertDraft = true
+	convertSaveDraft = ""
+	convertCoverImage = ""
+	convertCoverMediaID = "existing-cover-id"
+	convertAPIKey = ""
+	convertFontSize = "medium"
+	convertBackgroundType = "default"
+	convertCustomPrompt = ""
+	convertOutput = ""
+
+	markdownPath := filepath.Join(t.TempDir(), "article.md")
+	if err := os.WriteFile(markdownPath, []byte("# Title\n"), 0600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	newMarkdownConverter = func() converter.Converter {
+		return &fakeConverter{
+			result: &converter.ConvertResult{
+				Success: true,
+				Mode:    converter.ModeAPI,
+				Theme:   "default",
+				HTML:    "<p>body</p>",
+			},
+		}
+	}
+	newImageProcessor = func() imageProcessor { return &fakeImageProcessor{} }
+
+	drafter := &fakeDraftCreator{result: &publish.DraftResult{MediaID: "draft-existing"}}
+	newDraftCreator = func() publish.DraftCreator { return drafter }
+	uploadCoverImageFn = func(imagePath string) (string, error) {
+		t.Fatalf("uploadCoverImageFn should not be called when --cover-media-id is used")
+		return "", nil
+	}
+
+	if err := runConvert(nil, []string{markdownPath}); err != nil {
+		t.Fatalf("runConvert() error = %v", err)
+	}
+	if len(drafter.artifacts) != 1 {
+		t.Fatalf("draft artifacts = %#v", drafter.artifacts)
+	}
+	if drafter.artifacts[0].CoverMediaID != "existing-cover-id" {
+		t.Fatalf("cover media id = %q", drafter.artifacts[0].CoverMediaID)
+	}
+}
+
 func TestHandleAIResultUsesStableJSONEnvelopeWhenRequested(t *testing.T) {
 	oldLog := log
 	oldJSON := jsonOutput

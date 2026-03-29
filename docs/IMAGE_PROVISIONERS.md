@@ -301,7 +301,7 @@ api:
 
 ```bash
 export IMAGE_PROVIDER="gemini"
-export IMAGE_API_KEY="AIza..."  # 或 GOOGLE_API_KEY
+export IMAGE_API_KEY="AIza..."
 export IMAGE_MODEL="gemini-3.1-flash-image-preview"
 export IMAGE_SIZE="16:9"
 ```

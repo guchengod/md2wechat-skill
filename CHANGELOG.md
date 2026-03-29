@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-03-28
+
+### Added
+- Added an npm distribution package at `@geekjourneyx/md2wechat` so users can install the CLI through `npm install -g` without compiling Go locally.
+- Added `scripts/install.js` and `scripts/run.js` as a thin npm wrapper layer that downloads the version-matched GitHub Release binary and verifies `checksums.txt`.
+- Added `--cover-media-id` for `convert --draft` and `inspect --draft`, so article drafts can reuse an existing WeChat permanent cover asset without re-uploading a local file.
+
+### Changed
+- Updated the release workflow so npm packaging is smoked against the same release artifact on Linux and Windows before publish, then published to npm only after the GitHub Release assets are live.
+- Extended local and CI quality gates to validate npm package contents and keep `package.json`, `VERSION`, and marketplace metadata aligned.
+- Updated install documentation to include the npm path while keeping Homebrew, fixed-version installers, and Go install as first-class alternatives.
+- Tightened both skill entry points so `小绿书` / `图文笔记` / `newspic` requests route to `create_image_post` instead of being treated as standard article drafts.
+- Narrowed the npm support contract to the actual published release matrix: macOS `amd64/arm64`, Linux `amd64/arm64`, and Windows `amd64`.
+
+### Fixed
+- Fixed Windows npm smoke and local-bundle installs by treating Windows drive-letter paths in `MD2WECHAT_RELEASE_BASE_URL` as local filesystem paths instead of unsupported URL schemes.
+- Fixed agent-facing draft guidance so README, usage docs, and both `SKILL.md` entry points consistently describe `--cover` and `--cover-media-id` as the valid draft-cover contract.
+- Closed documentation drift around image-provider setup by removing stale `GOOGLE_API_KEY` guidance and keeping Gemini/Google instructions aligned on `IMAGE_API_KEY`.
+
 ## [2.0.5] - 2026-03-26
 
 ### Added

@@ -6,10 +6,11 @@
 
 - [系统要求](#系统要求)
 - [方式一：Homebrew tap](#方式一homebrew-tapmacos--linux)
-- [方式二：Go install（已有 Go 环境时可选）](#方式二go-install已有-go-环境时可选)
-- [方式三：安装脚本](#方式三安装脚本固定版本-release-资产)
-- [方式四：预编译二进制](#方式四预编译二进制)
-- [方式五：从源码编译](#方式五从源码编译)
+- [方式二：NPM 全局安装（已有 Node/npm 环境时可选）](#方式二npm-全局安装已有-nodenpm-环境时可选)
+- [方式三：Go install（已有 Go 环境时可选）](#方式三go-install已有-go-环境时可选)
+- [方式四：安装脚本](#方式四安装脚本固定版本-release-资产)
+- [方式五：预编译二进制](#方式五预编译二进制)
+- [方式六：从源码编译](#方式六从源码编译)
 - [验证安装](#验证安装)
 - [卸载](#卸载)
 
@@ -18,6 +19,7 @@
 ## 系统要求
 
 - **操作系统**：Linux / macOS / Windows
+- **Node 版本**：18 或更高（如果使用 NPM 安装）
 - **Go 版本**：1.26.1 或更高（如果从源码编译）
 - **网络**：需要访问微信公众号 API
 
@@ -41,12 +43,41 @@ brew upgrade geekjourneyx/tap/md2wechat
 
 ---
 
-## 方式二：Go install（已有 Go 环境时可选）
+## 方式二：NPM 全局安装（已有 Node/npm 环境时可选）
+
+如果你的机器上已经有稳定可用的 Node/npm 环境，也可以直接执行：
+
+```bash
+npm install -g @geekjourneyx/md2wechat
+```
+
+这个路径适合：
+- 已经用 npm 管理开发机上的 CLI
+- 希望避免本地重新编译 Go 项目
+- 希望 NPM、Homebrew、`install.sh` 复用同一批 GitHub Release 产物
+
+这个包不会走 `latest` 漂移，也不会在安装时重新构建源码。它会下载与 `package.json` 版本同号的 GitHub Release 二进制，并校验同一个 `checksums.txt`。
+
+当前 npm 安装目标矩阵：
+
+- macOS: `amd64` / `arm64`
+- Linux: `amd64` / `arm64`
+- Windows: `amd64`
+
+如果你的全局 npm bin 目录还没加入 `PATH`，先修复 npm 的全局命令路径，再重新打开终端验证：
+
+```bash
+md2wechat version --json
+```
+
+---
+
+## 方式三：Go install（已有 Go 环境时可选）
 
 如果你的机器上已经有稳定可用的 Go 环境，也可以直接执行：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.6
 ```
 
 这是一个可选路径，不是默认推荐路径。
@@ -61,18 +92,18 @@ go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.0.5
 
 ---
 
-## 方式三：安装脚本（固定版本 release 资产）
+## 方式四：安装脚本（固定版本 release 资产）
 
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6/install.sh | bash
 ```
 
 ### Windows PowerShell
 
 ```powershell
-$env:MD2WECHAT_RELEASE_BASE_URL = "https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.5"
+$env:MD2WECHAT_RELEASE_BASE_URL = "https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.6"
 iex ((New-Object System.Net.WebClient).DownloadString("$env:MD2WECHAT_RELEASE_BASE_URL/install.ps1"))
 ```
 
@@ -95,7 +126,7 @@ md2wechat version --json
 
 ---
 
-## 方式四：预编译二进制
+## 方式五：预编译二进制
 
 ### 下载地址
 
@@ -116,7 +147,7 @@ md2wechat version --json
 #### Linux / macOS
 
 ```bash
-VERSION=v2.0.5
+VERSION=v2.0.6
 ASSET=md2wechat-linux-amd64
 # macOS 请改成 md2wechat-darwin-amd64 或 md2wechat-darwin-arm64
 curl -LO https://github.com/geekjourneyx/md2wechat-skill/releases/download/${VERSION}/${ASSET}
@@ -145,7 +176,7 @@ md2wechat.exe version --json
 
 ---
 
-## 方式五：从源码编译
+## 方式六：从源码编译
 
 ```bash
 git clone https://github.com/geekjourneyx/md2wechat-skill.git

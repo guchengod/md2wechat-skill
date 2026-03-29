@@ -561,6 +561,56 @@ func TestRunInspectWithInputRejectsInvalidMode(t *testing.T) {
 	}
 }
 
+func TestRunInspectUsesCoverMediaIDForDraftReadiness(t *testing.T) {
+	oldCfg := cfg
+	oldMode, oldTheme := inspectMode, inspectTheme
+	oldFont, oldBackground := inspectFontSize, inspectBackgroundType
+	oldTitle, oldAuthor, oldDigest := inspectTitle, inspectAuthor, inspectDigest
+	oldCover, oldCoverMediaID := inspectCover, inspectCoverMediaID
+	oldUpload, oldDraft := inspectUpload, inspectDraft
+	t.Cleanup(func() {
+		cfg = oldCfg
+		inspectMode, inspectTheme = oldMode, oldTheme
+		inspectFontSize, inspectBackgroundType = oldFont, oldBackground
+		inspectTitle, inspectAuthor, inspectDigest = oldTitle, oldAuthor, oldDigest
+		inspectCover, inspectCoverMediaID = oldCover, oldCoverMediaID
+		inspectUpload, inspectDraft = oldUpload, oldDraft
+	})
+
+	cfg = &config.Config{
+		MD2WechatAPIKey: "api-key",
+		WechatAppID:     "appid",
+		WechatSecret:    "secret",
+	}
+	inspectMode = "api"
+	inspectTheme = "default"
+	inspectFontSize = "medium"
+	inspectBackgroundType = "none"
+	inspectTitle = ""
+	inspectAuthor = ""
+	inspectDigest = ""
+	inspectCover = ""
+	inspectCoverMediaID = "existing-cover-id"
+	inspectUpload = false
+	inspectDraft = true
+
+	markdownPath := filepath.Join(t.TempDir(), "article.md")
+	if err := os.WriteFile(markdownPath, []byte("# 标题\n"), 0600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	result, err := runInspect(markdownPath)
+	if err != nil {
+		t.Fatalf("runInspect() error = %v", err)
+	}
+	if !result.Readiness.DraftReady {
+		t.Fatalf("draft readiness = %#v", result.Readiness)
+	}
+	if hasErrorCheck(result.Checks) {
+		t.Fatalf("checks = %#v", result.Checks)
+	}
+}
+
 func TestRunPreviewRejectsInvalidMode(t *testing.T) {
 	oldCfg, oldLog := cfg, log
 	oldMode, oldTheme := previewMode, previewTheme

@@ -436,6 +436,72 @@ func TestRunMakesReadinessFalseForBlockingChecks(t *testing.T) {
 			t.Fatal("expected draft_ready false when the cover image path is invalid")
 		}
 	})
+
+	t.Run("existing cover media id makes draft ready without local cover path", func(t *testing.T) {
+		result, err := Run(&Input{
+			MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
+			Markdown:       "# 标题\n",
+			Mode:           "api",
+			DraftRequested: true,
+			Config:         fullCfg,
+			CoverMediaID:   "existing-cover-id",
+		})
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+		if !result.Readiness.ConvertReady || !result.Readiness.UploadReady || !result.Readiness.DraftReady {
+			t.Fatalf("readiness = %#v", result.Readiness)
+		}
+		if hasCheckCode(result.Checks, "MISSING_COVER") || hasCheckCode(result.Checks, "COVER_MEDIA_ID_INVALID") {
+			t.Fatalf("checks = %#v", result.Checks)
+		}
+	})
+
+	t.Run("conflicting cover inputs block draft readiness", func(t *testing.T) {
+		coverPath := filepath.Join(t.TempDir(), "cover.png")
+		if err := os.WriteFile(coverPath, []byte("cover"), 0600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		result, err := Run(&Input{
+			MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
+			Markdown:       "# 标题\n",
+			Mode:           "api",
+			DraftRequested: true,
+			Config:         fullCfg,
+			CoverImagePath: coverPath,
+			CoverMediaID:   "existing-cover-id",
+		})
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+		if !hasCheckCode(result.Checks, "CONFLICTING_COVER_INPUTS") {
+			t.Fatalf("checks = %#v", result.Checks)
+		}
+		if result.Readiness.DraftReady {
+			t.Fatal("expected draft_ready false when cover inputs conflict")
+		}
+	})
+
+	t.Run("url-like cover media id blocks draft readiness", func(t *testing.T) {
+		result, err := Run(&Input{
+			MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
+			Markdown:       "# 标题\n",
+			Mode:           "api",
+			DraftRequested: true,
+			Config:         fullCfg,
+			CoverMediaID:   "https://mmbiz.qpic.cn/example",
+		})
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+		if !hasCheckCode(result.Checks, "COVER_MEDIA_ID_INVALID") {
+			t.Fatalf("checks = %#v", result.Checks)
+		}
+		if result.Readiness.DraftReady {
+			t.Fatal("expected draft_ready false when cover_media_id is a URL")
+		}
+	})
 }
 
 func TestRunRejectsInvalidMode(t *testing.T) {

@@ -24,7 +24,10 @@ bash scripts/run-golangci-lint.sh
 echo "4) Run tests"
 CGO_ENABLED=1 go test -count=1 ./...
 
-echo "5) Run release checks"
+echo "5) Validate npm package contents"
+npm_config_cache="${TMPDIR:-/tmp}/md2wechat-npm-cache" npm pack --json --dry-run >/dev/null
+
+echo "6) Run release checks"
 make release-check
 
 echo "quality-gates: OK"

@@ -133,6 +133,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Download release bundle
         uses: actions/download-artifact@v4
         with:
@@ -164,6 +169,26 @@ jobs:
           chmod +x "${extract_dir}/md2wechat"
 
           output="$("${extract_dir}/md2wechat" version --json)"
+          printf '%s\n' "$output"
+          echo "$output" | grep -q "\"version\": \"${VERSION}\""
+
+      - name: Smoke npm package against same artifact
+        env:
+          VERSION: ${{ needs.build-release.outputs.version }}
+        run: |
+          bundle_dir="${GITHUB_WORKSPACE}/release-artifact"
+          pack_dir="$(mktemp -d)"
+          prefix_dir="$(mktemp -d)"
+
+          npm pack --pack-destination "$pack_dir" >/dev/null
+          tarball="$(find "$pack_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
+          test -n "$tarball"
+
+          MD2WECHAT_RELEASE_BASE_URL="${bundle_dir}" \
+          npm install -g "$tarball" --prefix "$prefix_dir"
+
+          package_dir="$(npm root -g --prefix "$prefix_dir")/@geekjourneyx/md2wechat"
+          output="$(node "${package_dir}/scripts/run.js" version --json)"
           printf '%s\n' "$output"
           echo "$output" | grep -q "\"version\": \"${VERSION}\""
 
@@ -206,11 +231,49 @@ jobs:
     needs: build-release
     runs-on: windows-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Download release bundle
         uses: actions/download-artifact@v4
         with:
           name: md2wechat-release-${{ needs.build-release.outputs.version }}
           path: release-artifact
+
+      - name: Smoke npm package against same artifact
+        env:
+          VERSION: ${{ needs.build-release.outputs.version }}
+        shell: pwsh
+        run: |
+          $bundleDir = Join-Path $env:GITHUB_WORKSPACE 'release-artifact'
+          $packDir = Join-Path $env:RUNNER_TEMP 'md2wechat-npm-pack'
+          $prefixDir = Join-Path $env:RUNNER_TEMP 'md2wechat-npm-prefix'
+
+          Remove-Item -Force -Recurse $packDir, $prefixDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $packDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $prefixDir | Out-Null
+
+          npm pack --pack-destination $packDir | Out-Null
+          $tarball = Get-ChildItem $packDir -Filter *.tgz | Select-Object -First 1
+          if (-not $tarball) {
+            throw "npm pack did not produce a tarball"
+          }
+
+          $env:MD2WECHAT_RELEASE_BASE_URL = $bundleDir
+          npm install -g $tarball.FullName --prefix $prefixDir
+
+          $packageRoot = npm root -g --prefix $prefixDir | Select-Object -Last 1
+          $packageDir = Join-Path $packageRoot '@geekjourneyx\md2wechat'
+          $versionOutput = node (Join-Path $packageDir 'scripts\run.js') version --json | Out-String
+          $versionData = $versionOutput | ConvertFrom-Json
+          if ($versionData.data.version -ne $env:VERSION) {
+            throw "installed npm package version mismatch"
+          }
 
       - name: Smoke PowerShell installer against same artifact
         env:
@@ -368,3 +431,44 @@ jobs:
           git add Formula/md2wechat.rb
           git commit -m "md2wechat v${{ needs.build-release.outputs.version }}"
           git push origin HEAD:main
+
+  publish-npm:
+    needs:
+      - build-release
+      - smoke-release
+      - smoke-release-windows
+      - release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check npm token
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN is required to publish @geekjourneyx/md2wechat" >&2
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify package version matches release version
+        env:
+          VERSION: ${{ needs.build-release.outputs.version }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if [ "${package_version}" != "${VERSION}" ]; then
+            echo "package.json version ${package_version} does not match release version ${VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Publish npm package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
