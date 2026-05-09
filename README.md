@@ -341,7 +341,7 @@ AI 模式返回一个结构化排版 prompt，需要 Claude / Codex 继续处理
 
 ---
 
-## 🌐 md2wechat 生态
+## md2wechat 生态
 
 围绕 md2wechat 打造的工具和资源矩阵，持续扩展中：
 
