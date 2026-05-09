@@ -60,8 +60,6 @@
 
 **限时加入下面👇的公众号创作交流群获取第一时间更新资讯（人满200为止），谢绝一切广告，推广等信息，一律踢出**
 
-稳定的中转站推荐：[codesome](https://fk.codesome.cn/?aff=EBM1nw30)
-
 <p align="center">
 <img width="160" alt="image" src="https://github.com/user-attachments/assets/ec0135fc-68e8-463e-8b4c-6348ff9631c3" />
 <img src="assets/wechat.png" alt="公众号：极客杰尼" width="160" />
