@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-05-11
+
+### Changed
+- **Brand Profile 格式**：从 YAML 改为 Markdown（`brand.yaml` → `brand.md`）
+  - Markdown 对 AI Agent 更友好：自然语言比结构化字段更具表达力
+  - Agent 读取原始文本，无需 YAML 解析
+  - `brand show` 响应：`data.profile`（解析后 map）→ `data.content`（原始文本）
+  - `brand init` 创建带注释的 Markdown 模板（含基本信息、语气风格、排版约束等章节）
+  - 移除 `gopkg.in/yaml.v3` 在 brand.go 的依赖
+
+### Added
+- **`docs/BRAND-PROFILE.md`**：新增品牌档案配置保姆级指南
+  - 说明为什么选择 Markdown 格式
+  - 逐章节解释配置含义
+  - 最佳实践（具体 vs 抽象、写反例）
+  - 好与坏配置对比案例
+  - FAQ（6 个常见问题）
+
+### Technical Details
+- **Modified Files**: `cmd/md2wechat/brand.go`, `cmd/md2wechat/brand_test.go`
+- **New Files**: `docs/BRAND-PROFILE.md`
+- **Dependency changes**: Removed `gopkg.in/yaml.v3` from brand.go
+
+### Migration Guide
+如果你已有 `~/.config/md2wechat/brand.yaml`，请手动迁移：
+```bash
+# 初始化新的 Markdown 档案
+md2wechat brand init
+
+# 将 YAML 中的内容以自然语言形式填入 brand.md
+open ~/.config/md2wechat/brand.md
+```
+旧的 brand.yaml 文件不会被自动删除，可手动清理。
+
 ## [2.2.0] - 2026-05-11
 
 ### Added
