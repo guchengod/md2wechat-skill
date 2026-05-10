@@ -490,6 +490,195 @@ md2wechat config validate
 
 ---
 
+---
+
+## Brand Profile
+
+Brand Profile 是 Agent 读取的品牌与风格配置文件，**CLI 不解析此文件**。
+
+与 CLI 运行时配置（`~/.md2wechat.yaml`）不同，Brand Profile 专门为 Agent 设计，用于记录内容生成的风格约束和偏好。
+
+### 快速开始
+
+```bash
+# 初始化 Brand Profile（幂等操作，文件存在时不覆盖）
+md2wechat brand init
+
+# 查看当前 Brand Profile
+md2wechat brand show
+md2wechat brand show --json
+```
+
+Brand Profile 位置：
+
+```text
+~/.config/md2wechat/brand.yaml
+```
+
+### Schema 完整说明
+
+以下是一份注释示例，展示所有支持的字段：
+
+```yaml
+# md2wechat Brand Profile
+schema_version: 1
+
+# 品牌名称或你的名字
+name: "极客杰尼"
+
+# 声音与语气定义
+voice:
+  # 你的语气风格（自由文本或关键字）
+  # 例如：犀利实用，第一人称 | 深度分析，学术风格 | 温暖鼓励，故事导向
+  tone: "犀利实用，第一人称"
+  
+  # 可选：风格参考文档或目录
+  # 指向本地文件或目录，Agent 可参考此规范进行内容创作
+  # 例如：~/Documents/brand/voice-guide.md 或 ~/brand-assets/
+  # style_ref: ~/Documents/brand/voice-guide.md
+  
+  # 要避免的表达方式（列表）
+  avoid:
+    - 过度营销
+    - 空泛鸡汤
+    - 过多 emoji
+
+# 排版与布局偏好
+layout:
+  # 文章开头风格
+  # 可选值：verdict_first（结论先行）| story_first（故事开场）
+  #        question_first（提问开场）| data_first（数据开场）
+  opening: "verdict_first"
+
+# 内容约束与限制
+limits:
+  # 单篇最多使用的高级排版模块数（上限 43）
+  # 设为 0 表示使用默认值 6
+  max_modules: 6
+  
+  # 最多行动按钮数（上限 2）
+  max_cta: 1
+  
+  # 最多引用块数（上限 10）
+  max_quotes: 2
+  
+  # 最多 Hero 块数（固定 1）
+  max_hero: 1
+
+# 默认行动按钮 (CTA)
+cta:
+  # 默认按钮标题
+  default_title: "如果这篇对你有启发"
+  
+  # 默认按钮正文
+  default_body: "欢迎关注极客杰尼的专栏，获取更多 AI 工具与独立开发实践"
+  
+  # 默认按钮行动（例如：关注 / 咨询 / 订阅）
+  default_action: "关注"
+
+# 作者卡片信息
+author_card:
+  # 显示名称
+  name: "极客杰尼"
+  
+  # 职位或身份标签
+  title: "AI 应用开发者 / 独立开发者"
+  
+  # 自我介绍
+  bio: "记录 AI 工具、内容系统和独立产品实践。"
+```
+
+### 字段说明表
+
+| 字段 | 类型 | 必需 | 说明 | 默认值 |
+|------|------|------|------|--------|
+| `schema_version` | 整数 | 是 | 格式版本 | `1` |
+| `name` | 字符串 | 否 | 品牌名称或作者名 | （无） |
+| `voice.tone` | 字符串 | 否 | 语气风格描述 | （无） |
+| `voice.style_ref` | 字符串 | 否 | 风格参考文件/目录路径 | （无） |
+| `voice.avoid` | 字符串数组 | 否 | 要避免的表达方式 | `[]` |
+| `layout.opening` | 字符串 | 否 | 开头风格选择 | `verdict_first` |
+| `limits.max_modules` | 整数 | 否 | 最多模块数（0=默认6） | `6` |
+| `limits.max_cta` | 整数 | 否 | 最多 CTA 数 | `1` |
+| `limits.max_quotes` | 整数 | 否 | 最多引用块数 | `2` |
+| `limits.max_hero` | 整数 | 否 | 最多 Hero 块数 | `1` |
+| `cta.default_title` | 字符串 | 否 | 默认按钮标题 | （无） |
+| `cta.default_body` | 字符串 | 否 | 默认按钮正文 | （无） |
+| `cta.default_action` | 字符串 | 否 | 默认按钮行动 | （无） |
+| `author_card.name` | 字符串 | 否 | 作者显示名称 | （无） |
+| `author_card.title` | 字符串 | 否 | 作者职位/身份 | （无） |
+| `author_card.bio` | 字符串 | 否 | 作者自我介绍 | （无） |
+
+### 降级行为与容错
+
+1. **文件不存在**：Agent 继续工作，不报错；使用内置默认值。
+
+2. **字段缺失**：未指定的字段使用表中的默认值。
+
+3. **超出上限自动截断（Sanity Caps）**：
+   - 若 `max_modules: 100`（超过上限 43），Agent 自动降至 `43`
+   - 若 `max_cta: 10`（超过上限 2），Agent 自动降至 `2`
+   - 若 `max_quotes: 50`（超过上限 10），Agent 自动降至 `10`
+   - 若 `max_hero: 2`（超过上限 1），Agent 自动降至 `1`
+
+4. **YAML 语法错误**：
+   - `md2wechat brand show` 会检测并返回错误信息
+   - Agent 应在读取前先执行 `brand show --json` 验证
+
+### 与 CLI 运行时配置的区别
+
+| 配置文件 | 位置 | 用途 | 解析方 | 必需 |
+|---------|------|------|--------|------|
+| CLI 运行时配置 | `~/.md2wechat.yaml` | API Keys、Provider、主题 | CLI | 创建草稿时必需 |
+| Brand Profile | `~/.config/md2wechat/brand.yaml` | 内容风格、排版偏好、约束 | Agent | 可选（无则使用默认） |
+
+**CLI 运行时配置** 典型场景：切换图片 Provider、配置 WeChat AppID、选择主题。
+
+**Brand Profile** 典型场景：Agent 生成内容时遵守品牌约束、追踪作者信息、统一语气风格。
+
+### 常见场景
+
+#### 只初始化，保持最小配置
+
+```bash
+md2wechat brand init
+# 编辑 ~/.config/md2wechat/brand.yaml，填入 name 和 voice.tone 即可
+```
+
+结果：Agent 会尊重你的品牌名和语气，但使用所有其他默认值。
+
+#### Agent 读取并应用 Brand Profile
+
+Agent 应该：
+
+```bash
+# 1. 检查 Brand Profile 是否存在
+md2wechat brand show --json
+
+# 2. 如果存在，解析并应用规则
+# 3. 生成内容时遵守 limits 约束、应用 voice.tone、使用 author_card 信息
+```
+
+#### Sanity Caps 自动截断示例
+
+配置文件：
+
+```yaml
+limits:
+  max_modules: 50    # 超过上限 43
+  max_cta: 5         # 超过上限 2
+```
+
+Agent 行为：
+
+```
+实际使用的上限：
+  max_modules → 43（自动降至上限）
+  max_cta → 2（自动降至上限）
+```
+
+---
+
 ## 相关文档
 
 - [新手快速开始](QUICKSTART.md)
