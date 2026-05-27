@@ -1,5 +1,6 @@
 schema_version: "1"
 name: stat-row
+body_format: json_array
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4
@@ -22,14 +23,14 @@ anti_pattern: |
   单行超过 4 个指标在窄屏显示拥挤；
   unit 写在 value 里（应单独填写 unit 字段，JSON key：unit）。
 fields:
-  required: []
-  optional:
+  required:
     - name: label
       description: 指标名称（JSON key：label）
       example: "满意度"
     - name: value
       description: 数值（JSON key：value，如 "99%"、"12K"）
       example: "99%"
+  optional:
     - name: unit
       description: 单位，渲染在数字后方字号更小（JSON key：unit，可省略）
       example: "人"

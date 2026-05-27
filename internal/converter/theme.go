@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,10 +20,26 @@ type Theme struct {
 	Type        string            `yaml:"type"` // "api" | "ai"
 	Description string            `yaml:"description"`
 	Version     string            `yaml:"version"`
+	Style       ThemeStyle        `yaml:"style,omitempty" json:"style,omitempty"`
 	StyleInfo   ThemeStyleInfo    `yaml:"style_info,omitempty"`
 	Colors      map[string]string `yaml:"colors,omitempty"`
 	APITheme    string            `yaml:"api_theme,omitempty"`
 	Prompt      string            `yaml:"prompt,omitempty"`
+}
+
+// ThemeStyle describes stable theme metadata for discovery and selection.
+type ThemeStyle struct {
+	Series           string `yaml:"series,omitempty" json:"series,omitempty"`
+	Color            string `yaml:"color,omitempty" json:"color,omitempty"`
+	Layout           string `yaml:"layout,omitempty" json:"layout,omitempty"`
+	Mood             string `yaml:"mood,omitempty" json:"mood,omitempty"`
+	BestFor          string `yaml:"best_for,omitempty" json:"best_for,omitempty"`
+	AvoidFor         string `yaml:"avoid_for,omitempty" json:"avoid_for,omitempty"`
+	VisualDensity    string `yaml:"visual_density,omitempty" json:"visual_density,omitempty"`
+	AttentionLevel   string `yaml:"attention_level,omitempty" json:"attention_level,omitempty"`
+	ReadabilityLevel string `yaml:"readability_level,omitempty" json:"readability_level,omitempty"`
+	BrandFit         string `yaml:"brand_fit,omitempty" json:"brand_fit,omitempty"`
+	APIRequired      string `yaml:"api_required,omitempty" json:"api_required,omitempty"`
 }
 
 // ThemeStyleInfo 主题风格信息
@@ -30,6 +47,74 @@ type ThemeStyleInfo struct {
 	Mood    string `yaml:"mood"`
 	Colors  string `yaml:"colors"`
 	BestFor string `yaml:"best_for"`
+}
+
+func (t Theme) Selectable() bool {
+	switch t.Type {
+	case "api":
+		return strings.TrimSpace(t.APITheme) != ""
+	case "ai":
+		return strings.TrimSpace(t.Prompt) != ""
+	default:
+		return false
+	}
+}
+
+func (t Theme) MetadataIncomplete() bool {
+	return strings.TrimSpace(t.Description) != "" &&
+		(strings.TrimSpace(t.Style.Series) == "" ||
+			strings.TrimSpace(t.Style.Color) == "" ||
+			strings.TrimSpace(t.Style.Mood) == "" ||
+			strings.TrimSpace(t.Style.BestFor) == "")
+}
+
+type ThemeCompatibilityError struct {
+	Code  string
+	Mode  ConvertMode
+	Name  string
+	Type  string
+	Cause error
+}
+
+func (e *ThemeCompatibilityError) Error() string {
+	if e == nil {
+		return ""
+	}
+	switch e.Code {
+	case "THEME_NOT_FOUND":
+		return fmt.Sprintf("theme %q was not found", e.Name)
+	case "THEME_NOT_SELECTABLE":
+		return fmt.Sprintf("theme %q is not selectable for %s mode", e.Name, e.Mode)
+	case "THEME_MODE_MISMATCH":
+		return fmt.Sprintf("theme %q is a %s theme and not valid for %s mode", e.Name, e.Type, e.Mode)
+	default:
+		if e.Cause != nil {
+			return e.Cause.Error()
+		}
+		return fmt.Sprintf("theme %q is not compatible with %s mode", e.Name, e.Mode)
+	}
+}
+
+func (e *ThemeCompatibilityError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Cause
+}
+
+func IsThemeModeMismatch(err error) bool {
+	var compatErr *ThemeCompatibilityError
+	return errors.As(err, &compatErr) && compatErr.Code == "THEME_MODE_MISMATCH"
+}
+
+func IsThemeNotSelectable(err error) bool {
+	var compatErr *ThemeCompatibilityError
+	return errors.As(err, &compatErr) && compatErr.Code == "THEME_NOT_SELECTABLE"
+}
+
+func IsThemeNotFound(err error) bool {
+	var compatErr *ThemeCompatibilityError
+	return errors.As(err, &compatErr) && compatErr.Code == "THEME_NOT_FOUND"
 }
 
 // ThemeManager 主题管理器
@@ -180,6 +265,38 @@ func (tm *ThemeManager) GetTheme(name string) (*Theme, error) {
 		return nil, fmt.Errorf("theme not found: %s", name)
 	}
 	return &theme, nil
+}
+
+func (tm *ThemeManager) ResolveThemeForMode(mode ConvertMode, name string) (*Theme, error) {
+	theme, err := tm.GetTheme(name)
+	if err != nil {
+		return nil, &ThemeCompatibilityError{
+			Code:  "THEME_NOT_FOUND",
+			Mode:  mode,
+			Name:  name,
+			Cause: err,
+		}
+	}
+
+	if theme.Type != string(mode) {
+		return nil, &ThemeCompatibilityError{
+			Code: "THEME_MODE_MISMATCH",
+			Mode: mode,
+			Name: name,
+			Type: theme.Type,
+		}
+	}
+
+	if !theme.Selectable() {
+		return nil, &ThemeCompatibilityError{
+			Code: "THEME_NOT_SELECTABLE",
+			Mode: mode,
+			Name: name,
+			Type: theme.Type,
+		}
+	}
+
+	return theme, nil
 }
 
 // ListThemes 列出所有主题

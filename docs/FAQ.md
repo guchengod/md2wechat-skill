@@ -55,13 +55,13 @@ npm install -g @geekjourneyx/md2wechat
 如果你已经有稳定可用的 Go 环境，也可以：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.1.0
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.0
 ```
 
 如果以上都不适合，再走固定版本安装脚本：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.1.0/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install.sh | bash
 ```
 
 安装脚本默认会把 CLI 放到：
@@ -149,13 +149,13 @@ npm install -g @geekjourneyx/md2wechat
 如果你已经有 Go 环境，再把第一步改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.1.0
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.0
 ```
 
 如果以上都不适合，再把第一步改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.1.0/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install.sh | bash
 ```
 
 如果你懒得自己操作，也可以直接把下面的话发给 Claude Code / Codex / OpenCode：
@@ -164,8 +164,8 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 请先安装 md2wechat CLI，再安装 md2wechat skill，并验证版本和能力发现都正常。
 执行：
 1. 如果我是 mac 用户，先运行：brew install geekjourneyx/tap/md2wechat
-2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.1.0
-3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.1.0/install.sh | bash
+2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.0
+3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install.sh | bash
 4. 运行：npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 5. 如果我是通过 install.sh 安装的，再执行：export PATH="$HOME/.local/bin:$PATH"
 6. md2wechat version --json
@@ -179,7 +179,7 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 ```text
 请帮我安装 OpenClaw 版 md2wechat，并验证 skill 和 CLI 都可用。
 执行：
-1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.1.0/install-openclaw.sh | bash
+1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install-openclaw.sh | bash
 2. 先执行：export PATH="$HOME/.local/bin:$PATH"
 3. md2wechat version --json
 4. md2wechat config init
@@ -209,7 +209,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果你已经有 Go 环境，再改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.1.0
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.0
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
@@ -217,7 +217,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果以上都不适合，再改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.1.0/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
@@ -461,6 +461,13 @@ md2wechat prompts show cover-default --kind image --json
 完整说明见：
 
 - [DISCOVERY.md](DISCOVERY.md)
+
+主题发现结果里要重点看两个字段：
+
+- `selectable`: `true` 才能作为 `convert --theme` 直接使用
+- `type`: 必须和转换模式匹配，API 模式选 `api` 主题，AI 模式选 `ai` 主题
+
+`api-collection` 这类集合描述会出现在发现结果里，但它不是可执行主题，`selectable` 会是 `false`。
 
 如果你不想自己写图片 prompt，可以直接用内置 preset：
 
@@ -760,6 +767,33 @@ md2wechat prompts list --json
 - 默认 provider 是什么
 - 当前 provider 支持哪些模型
 - 当前有哪些 theme / prompt 真正可用
+- 当前 theme 是否可选择，以及适合 API 模式还是 AI 模式
+
+### Why did `config validate` pass but `convert` still failed?
+
+`config validate` 只说明配置能被加载和解析，不代表每个转换路径都可执行。`convert` 还会检查：
+
+- API 模式是否有 API key
+- 选择的主题是否存在
+- 主题是否 `selectable: true`
+- 主题 `type` 是否匹配当前 `--mode`
+- draft/upload 路径是否有 WeChat 凭证
+
+如果看到 `THEME_MODE_MISMATCH`、`THEME_NOT_FOUND` 或 `THEME_NOT_SELECTABLE`，先运行：
+
+```bash
+md2wechat themes list --json
+```
+
+然后选择一个 `selectable: true` 且 `type` 匹配当前模式的主题。
+
+如果想在执行前做本地体检，运行：
+
+```bash
+md2wechat doctor --json
+```
+
+`doctor` 不调用远程 API，不验证 live auth，不上传图片，也不创建草稿。它只报告本地配置、默认 API 转换 readiness、默认主题、layout catalog 和 WeChat 草稿凭证是否就绪。
 
 ---
 
@@ -771,7 +805,9 @@ md2wechat layout list --serves attention --json   # attention-grabbing modules
 md2wechat layout show hero --json      # full spec with fields and example
 ```
 
-Use `layout render` to generate a valid :::block, then pass it in the markdown body to `/api/convert`.
+When the user has not chosen a theme or module, use discovery output as facts and let the Agent decide from the article and Brand Profile. The CLI does not parse Brand Profile; Agents should read `~/.config/md2wechat/brand.md` themselves, choose a compatible theme from `themes list --json`, inspect module schemas with `layout show`, and render only the modules they can fill correctly.
+
+Keep the source Markdown read-only: create a temporary formatted Markdown artifact with rendered `:::module` blocks, run `layout validate` on that generated file, then pass the generated Markdown to `/api/convert`. Saving generated Markdown near the source requires explicit user confirmation.
 
 ### What does "unknown layout module" in validate output mean?
 

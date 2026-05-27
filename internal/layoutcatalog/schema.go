@@ -2,11 +2,25 @@ package layoutcatalog
 
 const SchemaVersion = "1"
 
+const (
+	BodyFormatFields     = "fields"
+	BodyFormatRows       = "rows"
+	BodyFormatJSONObject = "json_object"
+	BodyFormatJSONArray  = "json_array"
+)
+
 var ValidServes = map[string]bool{
 	"attention":    true,
 	"readability":  true,
 	"memorability": true,
 	"conversion":   true,
+}
+
+var ValidBodyFormats = map[string]bool{
+	BodyFormatFields:     true,
+	BodyFormatRows:       true,
+	BodyFormatJSONObject: true,
+	BodyFormatJSONArray:  true,
 }
 
 type FieldSpec struct {
@@ -37,6 +51,7 @@ type LayoutMetadata struct {
 type LayoutSpec struct {
 	SchemaVersion      string         `yaml:"schema_version"`
 	Name               string         `yaml:"name"`
+	BodyFormat         string         `yaml:"body_format,omitempty" json:"body_format,omitempty"`
 	Version            string         `yaml:"version"`
 	Since              string         `yaml:"since,omitempty"`
 	Category           string         `yaml:"category"`

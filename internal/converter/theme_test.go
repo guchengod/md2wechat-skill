@@ -27,6 +27,66 @@ func TestThemeManagerLoadsBuiltinThemesWithoutFilesystemAssets(t *testing.T) {
 	}
 }
 
+func TestThemeManagerParsesStyleMetadata(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	tm := NewThemeManager()
+	theme, err := tm.GetTheme("minimal-blue")
+	if err != nil {
+		t.Fatalf("GetTheme(minimal-blue) error = %v", err)
+	}
+	if theme.Style.Series != "minimal" {
+		t.Fatalf("Style.Series = %q, want minimal", theme.Style.Series)
+	}
+	if theme.Style.Color != "blue" {
+		t.Fatalf("Style.Color = %q, want blue", theme.Style.Color)
+	}
+	if theme.Style.Mood == "" {
+		t.Fatal("expected Style.Mood")
+	}
+	if theme.Style.BestFor == "" {
+		t.Fatal("expected Style.BestFor")
+	}
+}
+
+func TestThemeSelectabilityMarksAPICollectionFalse(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	tm := NewThemeManager()
+	theme, err := tm.GetTheme("api-collection")
+	if err != nil {
+		t.Fatalf("GetTheme(api-collection) error = %v", err)
+	}
+	if theme.Selectable() {
+		t.Fatal("expected api-collection not to be selectable")
+	}
+}
+
+func TestThemeMetadataIncompleteRequiresAllCoreStyleFields(t *testing.T) {
+	partial := Theme{
+		Description: "partially documented theme",
+		Style: ThemeStyle{
+			Series: "minimal",
+		},
+	}
+	if !partial.MetadataIncomplete() {
+		t.Fatal("expected partially populated style metadata to be incomplete")
+	}
+
+	complete := Theme{
+		Description: "fully documented theme",
+		Style: ThemeStyle{
+			Series:  "minimal",
+			Color:   "blue",
+			Mood:    "clean",
+			BestFor: "technical docs",
+		},
+	}
+	if complete.MetadataIncomplete() {
+		t.Fatal("expected fully populated style metadata to be complete")
+	}
+}
+
 func TestThemeManagerPrefersCurrentDirectoryThemeOverBuiltin(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)

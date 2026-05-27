@@ -99,6 +99,57 @@ func TestListThemesIncludesBuiltinTheme(t *testing.T) {
 	}
 }
 
+func TestListThemeViewsExposeSelectionMetadata(t *testing.T) {
+	themes, err := listThemeViews()
+	if err != nil {
+		t.Fatalf("listThemeViews() error = %v", err)
+	}
+
+	found := false
+	for _, theme := range themes {
+		if theme.Name != "minimal-blue" {
+			continue
+		}
+		found = true
+		if theme.Type != "api" {
+			t.Fatalf("Type = %q, want api", theme.Type)
+		}
+		if !theme.Selectable {
+			t.Fatal("expected minimal-blue selectable")
+		}
+		if theme.Style.Series != "minimal" {
+			t.Fatalf("Style.Series = %q, want minimal", theme.Style.Series)
+		}
+		if theme.Style.Color != "blue" {
+			t.Fatalf("Style.Color = %q, want blue", theme.Style.Color)
+		}
+	}
+	if !found {
+		t.Fatal("expected minimal-blue theme view")
+	}
+}
+
+func TestListThemeViewsMarksAPICollectionNotSelectable(t *testing.T) {
+	themes, err := listThemeViews()
+	if err != nil {
+		t.Fatalf("listThemeViews() error = %v", err)
+	}
+
+	found := false
+	for _, theme := range themes {
+		if theme.Name != "api-collection" {
+			continue
+		}
+		found = true
+		if theme.Selectable {
+			t.Fatal("expected api-collection not selectable")
+		}
+	}
+	if !found {
+		t.Fatal("expected api-collection theme view")
+	}
+}
+
 func TestBuildCapabilitiesDataIncludesPromptCatalog(t *testing.T) {
 	oldCfg := cfg
 	t.Cleanup(func() {
@@ -157,6 +208,54 @@ func TestBuildCapabilitiesDataKeepsConvertContractStableWithInspectAndPreview(t 
 	}
 	if len(backgroundTypes) != 3 || backgroundTypes[0] != "default" || backgroundTypes[1] != "grid" || backgroundTypes[2] != "none" {
 		t.Fatalf("background_types = %#v", backgroundTypes)
+	}
+}
+
+func TestBuildCapabilitiesDataIncludesLayoutWithoutUnreleasedFormat(t *testing.T) {
+	oldCfg := cfg
+	t.Cleanup(func() { cfg = oldCfg })
+
+	cfg = &config.Config{DefaultTheme: "default"}
+	data, err := buildCapabilitiesData()
+	if err != nil {
+		t.Fatalf("buildCapabilitiesData() error = %v", err)
+	}
+
+	commands, ok := data["commands"].([]string)
+	if !ok {
+		t.Fatalf("commands type = %T", data["commands"])
+	}
+	if !contains(commands, "layout") {
+		t.Fatalf("commands missing layout: %#v", commands)
+	}
+	if !contains(commands, "brand") {
+		t.Fatalf("commands missing brand: %#v", commands)
+	}
+	if !contains(commands, "doctor") {
+		t.Fatalf("commands missing doctor: %#v", commands)
+	}
+	if contains(commands, "format") {
+		t.Fatalf("commands should not include format in Capability Truth phase: %#v", commands)
+	}
+
+	layout, ok := data["layout"].(map[string]any)
+	if !ok {
+		t.Fatalf("layout type = %T", data["layout"])
+	}
+	if layout["available"] != true {
+		t.Fatalf("layout available = %#v", layout["available"])
+	}
+	if layout["module_count"] != 43 {
+		t.Fatalf("layout module_count = %#v, want 43", layout["module_count"])
+	}
+	if layout["api_mode_only"] != true {
+		t.Fatalf("layout api_mode_only = %#v", layout["api_mode_only"])
+	}
+	if layout["supports_validate"] != true {
+		t.Fatalf("layout supports_validate = %#v", layout["supports_validate"])
+	}
+	if _, ok := data["format"]; ok {
+		t.Fatalf("capabilities should not expose unreleased format workflow: %#v", data["format"])
 	}
 }
 

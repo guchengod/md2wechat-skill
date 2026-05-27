@@ -68,13 +68,17 @@ subtitle: 不是好不好看，是读者读不读得完
 
 ### 语法规则
 
+每个模块的 `body_format` 决定正文写法。先用 `layout list --json` 粗看，再用 `layout show <name> --json` 查看完整规格，不要从示例猜。
+
+`body_format: fields`：
+
 ```
 :::模块名
 字段名: 字段值
 :::
 ```
 
-或者带标题：
+`body_format: rows`，可带标题：
 
 ```
 :::模块名[卡片标题]
@@ -82,7 +86,7 @@ subtitle: 不是好不好看，是读者读不读得完
 :::
 ```
 
-JSON 格式模块（sprint4 系列）：
+`body_format: json_object` 或 `body_format: json_array`：
 
 ```
 :::模块名
@@ -339,7 +343,7 @@ title: 公众号创作者正在经历什么
 :::steps[落地步骤]
 01 | 发现模块 | layout list 列出所有可用模块
 02 | 查看规格 | layout show 确认字段和示例
-03 | 写进文章 | 直接粘贴 :::block 语法
+03 | 写进文章 | 直接粘贴 :::module 语法
 04 | 验证语法 | layout validate 检查错误
 05 | 转换发布 | convert 输出微信 HTML
 :::
@@ -729,9 +733,9 @@ topic: 高级排版模块实战指南
 
 ### sprint4 精选增强类
 
-**背景**：这 9 个模块使用 JSON 格式写内容（不是 `key: value` 格式），适合更复杂的数据展示场景。
+**背景**：部分 sprint4 模块使用 JSON 格式写内容（不是 `key: value` 格式），适合更复杂的数据展示场景。
 
-> **注意**：JSON 模式的关键字段名必须完全正确，否则渲染为空。建议先用 `layout show <name> --json` 确认字段名。
+> **注意**：JSON 模式的关键字段名必须完全正确，否则渲染为空。先用 `layout show <name> --json` 查看 `body_format` 和字段名。
 
 ---
 
@@ -759,7 +763,7 @@ topic: 高级排版模块实战指南
 :::
 
 :::callout danger
-❌ 错误：不要用 --mode ai 时期望 :::block 模块渲染。
+❌ 错误：不要用 --mode ai 时期望 :::module 模块渲染。
 :::
 ```
 
@@ -871,7 +875,7 @@ topic: 高级排版模块实战指南
 
 ```
 :::changelog
-{"version":"v2.1.0","date":"2026-01-15","added":["43 个高级排版模块","layout list/show/render/validate 命令","4 级 override 体系"],"changed":["发现命令增加 layout 系列"],"fixed":["bracket-title 正则修复"]}
+{"version":"v2.3.0","date":"2026-05-27","added":["43 个高级排版模块","layout list/show/render/validate 命令","4 级 override 体系"],"changed":["发现命令增加 layout 系列"],"fixed":["bracket-title 正则修复"]}
 :::
 ```
 
@@ -1048,9 +1052,9 @@ Agent 在选模块时遵循以下顺序：
 
 ## 六、常见错误排查
 
-### 错误 1：`:::block` 没有渲染，原样输出
+### 错误 1：`:::module` 没有渲染，原样输出
 
-**原因**：使用了 `--mode ai`，AI 模式不渲染 `:::block` 语法。
+**原因**：使用了 `--mode ai`，AI 模式不渲染 `:::module` 语法。
 
 **解决**：去掉 `--mode ai`，直接用默认 API 模式：
 
@@ -1077,7 +1081,7 @@ md2wechat layout show <name> --json
 
 ### 错误 3：sprint4 JSON 模块字段名写错（最常见）
 
-正确的 JSON key 名（容易写错的）：
+正确的字段名（容易写错的）：
 
 | 模块 | ❌ 错误写法 | ✅ 正确写法 |
 |------|-----------|-----------|
@@ -1092,7 +1096,7 @@ md2wechat layout show <name> --json
 **解决**：
 
 ```bash
-# 查看正确的 JSON 结构
+# 查看正确的字段结构
 md2wechat layout show tweet --json
 # 看 Fields.Required 和 Fields.Optional 的 Name 字段
 ```
@@ -1113,12 +1117,13 @@ md2wechat config show --format json | grep api_key
 
 ### 错误 5：`rows` 格式写错（pipe vs JSON）
 
-部分模块用 pipe 分隔（`a | b | c`），部分用 JSON 数组（`[{"key":"val"}]`）：
+部分模块用 pipe 分隔（`a | b | c`），部分用 JSON 对象或数组：
 
 - **Pipe 格式**：metrics, compare, steps, timeline, toc, cards, faq, cases 等
-- **JSON 格式**：stat-row, question, resource-list, comparison-table, changelog, definition
+- **JSON object 格式**：comparison-table, changelog, definition, quote-card, tweet
+- **JSON array 格式**：stat-row, question, resource-list
 
-用 `layout show` 查看 `Fields` 部分，description 中会明确注明格式。
+用 `layout show` 查看 `body_format` 和 `Fields` 部分。
 
 ---
 

@@ -1,6 +1,8 @@
 package layoutcatalog
 
 import (
+	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -24,8 +26,15 @@ func (c *Catalog) Validate(markdown string) ValidationReport {
 	lines := strings.Split(markdown, "\n")
 	i := 0
 	for i < len(lines) {
-		m := blockOpenRE.FindStringSubmatch(strings.TrimRight(lines[i], "\r"))
+		line := strings.TrimRight(lines[i], "\r")
+		m := blockOpenRE.FindStringSubmatch(line)
 		if m == nil {
+			if strings.HasPrefix(strings.TrimSpace(line), ":::") && strings.TrimSpace(line) != ":::" {
+				r.Errors = append(r.Errors, ValidationIssue{
+					Line:    i + 1,
+					Message: "invalid layout block opener",
+				})
+			}
 			i++
 			continue
 		}
@@ -62,6 +71,20 @@ func (c *Catalog) validateBlock(name string, body []string, line int, r *Validat
 		return
 	}
 	present := map[string]string{}
+	if spec.BodyFormat == BodyFormatJSONObject || spec.BodyFormat == BodyFormatJSONArray {
+		if jsonFields, err := parseJSONBodyFields(body, spec.BodyFormat); err != nil {
+			r.Errors = append(r.Errors, ValidationIssue{
+				Module:  name,
+				Line:    line,
+				Message: err.Error(),
+			})
+			return
+		} else {
+			for k, v := range jsonFields {
+				present[k] = v
+			}
+		}
+	}
 	for _, ln := range body {
 		ln = strings.TrimRight(ln, "\r")
 		if strings.TrimSpace(ln) == "" {
@@ -75,7 +98,7 @@ func (c *Catalog) validateBlock(name string, body []string, line int, r *Validat
 		v := strings.TrimSpace(ln[idx+1:])
 		present[k] = v
 	}
-	if spec.Rows != nil {
+	if spec.BodyFormat == BodyFormatRows {
 		rowCount := 0
 		for _, ln := range body {
 			ln = strings.TrimRight(ln, "\r")
@@ -128,6 +151,67 @@ func (c *Catalog) validateBlock(name string, body []string, line int, r *Validat
 					})
 				}
 			}
+		}
+	}
+}
+
+func parseJSONBodyFields(body []string, bodyFormat string) (map[string]string, error) {
+	rawLines := make([]string, 0, len(body))
+	for _, ln := range body {
+		trimmed := strings.TrimSpace(strings.TrimRight(ln, "\r"))
+		if trimmed != "" {
+			rawLines = append(rawLines, trimmed)
+		}
+	}
+	if len(rawLines) == 0 {
+		return nil, nil
+	}
+	raw := strings.Join(rawLines, "\n")
+	switch bodyFormat {
+	case BodyFormatJSONObject:
+		if !strings.HasPrefix(raw, "{") {
+			return nil, fmt.Errorf("%w: expected JSON object body", ErrInvalidFieldValue)
+		}
+	case BodyFormatJSONArray:
+		if !strings.HasPrefix(raw, "[") {
+			return nil, fmt.Errorf("%w: expected JSON array body", ErrInvalidFieldValue)
+		}
+	}
+
+	fields := map[string]string{}
+	var decoded any
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		return nil, err
+	}
+	collectJSONFields(fields, "", decoded)
+	return fields, nil
+}
+
+func collectJSONFields(fields map[string]string, prefix string, value any) {
+	switch typed := value.(type) {
+	case map[string]any:
+		for k, v := range typed {
+			key := k
+			if prefix != "" {
+				key = prefix + "." + k
+			}
+			collectJSONFields(fields, key, v)
+		}
+	case []any:
+		for _, item := range typed {
+			collectJSONFields(fields, prefix, item)
+		}
+	case string:
+		if prefix != "" {
+			fields[prefix] = typed
+		}
+	case float64, bool:
+		if prefix != "" {
+			fields[prefix] = fmt.Sprint(typed)
+		}
+	default:
+		if prefix != "" {
+			fields[prefix] = "present"
 		}
 	}
 }

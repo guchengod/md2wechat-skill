@@ -59,6 +59,7 @@ func rowsSpecWithEnum() *LayoutSpec {
 	return &LayoutSpec{
 		SchemaVersion: SchemaVersion,
 		Name:          "test-rows-enum",
+		BodyFormat:    BodyFormatRows,
 		Category:      "body",
 		Serves:        []string{"readability"},
 		Fields: &FieldsSpec{
@@ -122,7 +123,53 @@ func TestRenderRowsEnumValidSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "align: center") || !strings.Contains(out, "style: bordered") {
+	if !strings.Contains(out, "align: center") || !strings.Contains(out, "style: bordered") || !strings.Contains(out, "a|b") {
 		t.Errorf("output missing expected fields:\n%s", out)
+	}
+}
+
+func TestRenderJSONArrayRequiresFields(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	_, err := c.Render("question", map[string]any{})
+	if err == nil {
+		t.Fatal("expected missing q/a error")
+	}
+}
+
+func TestRenderJSONFieldsUsesExampleBodyShape(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	out, err := c.Render("definition", map[string]any{
+		"term":      "OKR",
+		"def":       "目标与关键结果",
+		"termLabel": "术语",
+	})
+	if err != nil {
+		t.Fatalf("Render failed: %v", err)
+	}
+	if !strings.Contains(out, `{"def":"目标与关键结果","term":"OKR","termLabel":"术语"}`) {
+		t.Fatalf("definition should render JSON body, got:\n%s", out)
+	}
+}
+
+func TestRenderJSONArrayFieldsUsesExampleBodyShape(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	out, err := c.Render("question", map[string]any{
+		"q": "模块是否支持所有主题？",
+		"a": "支持。",
+	})
+	if err != nil {
+		t.Fatalf("Render failed: %v", err)
+	}
+	if !strings.Contains(out, `[{"a":"支持。","q":"模块是否支持所有主题？"}]`) {
+		t.Fatalf("question should render JSON array body, got:\n%s", out)
 	}
 }

@@ -6,9 +6,17 @@
 
 ---
 
-## 一、能力发现（每次会话开始前执行）
+## 一、能力发现（按任务决策执行）
 
-在执行任何排版任务前，Agent 必须先发现当前实例的能力边界。这些命令是**幂等的**，应当在每个新会话的开始时执行一次：
+Agent 应把 CLI discovery 当成事实来源，但不要把所有发现命令当成每次任务的固定仪式。先判断下一步需要做什么，再运行最小必要的 discovery：
+
+- 文章排版且用户未指定主题或模块：运行 `themes list --json` 和 `layout list --json`
+- 已指定某个主题、provider、prompt 或 layout 模块：优先运行对应的 `show <name> --json`
+- 图片生成或图片 prompt 选择：运行 `providers list --json` 和相关 `prompts list --kind image --json`
+- 草稿、上传、API readiness 或配置排障：运行 `doctor --json` 和必要的 `config show --format json`
+- CLI 版本、命令能力或行为边界不确定：运行 `version --json` 和 `capabilities --json`
+
+简单本地操作（例如 `preview`、`humanize`，或用户已经给出完整命令和 flags）不需要运行无关的 provider/theme/prompt/layout discovery。
 
 ### 1.1 查看完整能力集
 
@@ -22,7 +30,9 @@ md2wechat capabilities --json
 - `inspect` 和 `preview` 的可用选项
 - 支持的图片 provider、主题、prompt 种类数量
 
-### 1.2 查看可用主题（38+ 个）
+只有在命令能力、默认模式或版本边界不确定时才需要先跑此命令。
+
+### 1.2 查看可用主题
 
 ```bash
 md2wechat themes list --json
@@ -32,9 +42,9 @@ md2wechat themes list --json
 1. `MD2WECHAT_THEMES_DIR` 环境变量指向的目录
 2. `./themes` 本地目录
 3. `~/.config/md2wechat/themes` 用户目录
-4. 内置主题资产（38 个）
+4. 内置主题资产
 
-使用 `md2wechat themes show <theme_name> --json` 查看单个主题的详细配置。
+当需要选择主题，或 Brand Profile / 用户指令指定了主题时，Agent 必须读取 `type` 和 `selectable`：API 模式只能选择 `type: api` 且 `selectable: true` 的主题；AI 模式只能选择 `type: ai` 且 `selectable: true` 的主题。使用 `md2wechat themes show <theme_name> --json` 查看单个主题的详细配置。
 
 ### 1.3 查看可用图片 Provider（6+ 个）
 
@@ -42,7 +52,7 @@ md2wechat themes list --json
 md2wechat providers list --json
 ```
 
-列出所有支持的图片生成 provider：
+仅在图片生成、封面、信息图或 provider 选择任务中使用。列出所有支持的图片生成 provider：
 - `openai` — OpenAI GPT Image / DALL·E
 - `tuzi` — 图子 AI
 - `modelscope` / `ms` — ModelScope
@@ -58,7 +68,7 @@ md2wechat providers list --json
 md2wechat prompts list --json
 ```
 
-列出所有内置 prompt 模板，包括：
+仅在需要选择或渲染 prompt 模板时使用。列出所有内置 prompt 模板，包括：
 - `humanizer` — 人性化润色（4 个强度 + authentic 模式）
 - `refine` — 内容精修
 - `image` — 图片生成
@@ -75,7 +85,7 @@ md2wechat layout list --serves memorability --json
 md2wechat layout list --serves conversion --json
 ```
 
-列出所有可用的高级排版模块。每个模块都有四个服务目标之一或多个：
+仅在高级排版、模块选择或模块语法排障时使用。列出所有可用的高级排版模块。每个模块都有四个服务目标之一或多个：
 - `attention` — 吸引注意力（hero、verdict、toc）
 - `readability` — 提升可读性（steps、callout、bridge）
 - `memorability` — 增强记忆点（quote、metrics、summary）
@@ -108,13 +118,29 @@ md2wechat config init
 
 这会在 `~/.config/md2wechat/config.yaml` 创建示例配置文件。Agent 不应该自动调用此命令，除非用户明确要求重新初始化。
 
-### 2.3 验证配置（发布前必须）
+### 2.3 验证配置
 
 ```bash
 md2wechat config validate
 ```
 
-在发布任何文章到微信前，都应该先验证配置。如果返回非零退出码，表示配置有问题。
+`config validate` 只说明配置能加载和解析，不代表每条执行路径都已经就绪。
+
+### 2.4 本地体检（执行前推荐）
+
+```bash
+md2wechat doctor --json
+```
+
+`doctor` 是本地只读诊断命令。它检查 config load、默认转换模式、API key/base presence、默认主题兼容性、layout catalog、WeChat 草稿凭证。它不做 live auth、不上传图片、不创建草稿。
+
+Agent 应读取：
+
+- `overall`：`ready` / `degraded` / `blocked`
+- `live`：固定为 `false`
+- `readiness.format_api`：是否可执行 API 转换
+- `readiness.advanced_layout`：是否可渲染高级排版模块
+- `readiness.draft`：是否具备创建草稿的本地凭证
 
 ---
 
@@ -161,18 +187,11 @@ brand_content=$(echo "$result" | jq -r '.data.content')
 
 ### 3.3 Brand Profile 引导流程（如果不存在）
 
-当 `md2wechat brand show` 返回 `BRAND_NOT_FOUND` 时，Agent 应发起 3 问引导：
+当 `md2wechat brand show` 返回 `BRAND_NOT_FOUND` 时，Agent 不应阻塞当前任务。只在任务开始前提示一次：
 
-```
-我注意到你还没有设置品牌档案。这能让每篇文章都"像你说的话"。
-3 个问题，2 分钟完成：
+> 我没有看到 Brand Profile，这次会使用系统默认风格。如果你想固定 CTA、作者信息或长期语气，可以稍后让我帮你设置。
 
-1. 你希望文章的整体语气是？（例如：犀利实用、温暖鼓励、专业严谨）
-2. 有没有你一定要避免的表达方式？（例如：过多 emoji、空泛鸡汤）
-3. 如果你有风格参考文件或文件夹，可以告诉我路径（可选）
-```
-
-根据用户回答，创建或编辑 `~/.config/md2wechat/brand.md`。
+然后继续执行当前排版/转换任务。只有当用户明确要求“设置 Brand Profile”或“brand init”时，才进入 3 问引导并创建或编辑 `~/.config/md2wechat/brand.md`。
 
 ---
 
@@ -180,11 +199,17 @@ brand_content=$(echo "$result" | jq -r '.data.content')
 
 在将文章交给 `convert` 之前，Agent 应该先做"排版诊断"来理解文章的结构和需求。
 
+### 4.0 产物边界
+
+当用户只说“帮我排版这篇文章”，Agent 应自己读取文章、Brand Profile 和 discovery 输出做排版判断。CLI 只提供事实、schema、渲染和校验，不替 Agent 做审美决策。
+
+Agent 不应把 `:::module` 直接写回用户原文。应复制原文到临时 Markdown，插入 `layout render` 生成的模块，运行 `layout validate --file <temp.md> --json`，再把临时 Markdown 交给 `convert`。只有用户明确要求保存排版稿时，才可以把生成稿写到源文件旁边，且不能覆盖原文。
+
 ### 4.1 诊断三步法
 
 **Step 1 — 意图识别**
 
-Agent 应该提出三个问题来理解文章：
+Agent 应先从文章本身和用户指令中判断这三个问题；只有关键信息缺失且会影响执行结果时，才向用户追问：
 - 这篇文章的目标读者是谁？
 - 这篇文章想让读者下一步做什么（conversion goal）？
 - 读完后读者最应该记住什么（memorability anchor）？
@@ -202,10 +227,10 @@ Agent 应该提出三个问题来理解文章：
 
 **Step 3 — 模块选择与验证**
 
-结合 Brand Profile 的 `limits` 和内容特性，从 43 个模块中选择最合适的组合，然后验证语法：
+结合 Brand Profile 的自然语言约束和内容特性，从 43 个模块中选择最合适的组合。保持用户原文只读，把生成稿写入临时 Markdown，然后验证临时稿：
 
 ```bash
-md2wechat layout validate --file article.md --json
+md2wechat layout validate --file /tmp/md2wechat-format/<run-id>/article.formatted.md --json
 ```
 
 ### 4.2 查看单个模块详情与示例
@@ -215,9 +240,11 @@ md2wechat layout validate --file article.md --json
 md2wechat layout show hero --json
 md2wechat layout show callout --json
 
-# 查看渲染示例（需要 API 服务）
-md2wechat layout render callout --var CONTENT="重要提示" --var LEVEL="warning"
+# 渲染模块 Markdown 片段（本地命令，不调用远程 API）
+md2wechat layout render callout --var 'rows=[["重要提示"]]' --json
 ```
+
+读取 `layout list --json` / `layout show --json` 的 `body_format` 决定正文写法：`fields` / `rows` / `json_object` / `json_array`。不要从 `example` 反推语法。
 
 ---
 
@@ -232,7 +259,7 @@ md2wechat convert article.md --output output.html
 ```
 
 **前置条件**：
-- 需要本地 API 服务运行在 `http://localhost:3000`（或通过 `API_BASE_URL` 配置）
+- 需要配置 `MD2WECHAT_API_KEY`，可通过 `MD2WECHAT_BASE_URL` 或 `api.md2wechat_base_url` 覆盖 API 地址
 - 支持所有 43 个高级排版模块
 - 输出 HTML 最终，可直接用于微信草稿或发布
 
@@ -240,12 +267,15 @@ md2wechat convert article.md --output output.html
 ```json
 {
   "success": true,
-  "code": "CONVERTED",
+  "code": "CONVERT_COMPLETED",
   "data": {
+    "mode": "api",
+    "theme": "minimal-blue",
     "output_file": "/path/to/output.html",
-    "html_size": 12345,
-    "images_count": 3,
-    "layout_modules_used": ["hero", "callout", "cta"]
+    "image_count": 3,
+    "preview": false,
+    "upload": false,
+    "draft": false
   }
 }
 ```
@@ -257,11 +287,11 @@ md2wechat convert article.md --mode ai --output output.html
 ```
 
 **特点**：
-- 不需要本地 API 服务
+- 不需要 md2wechat API Key
 - 不支持高级排版语法（`:::module` 被当作普通文本）
-- 适合快速预览或离线场景
+- 适合不使用高级排版模块的轻量场景
 
-**⚠️ 降级规则**：如果 API 服务不可用，自动降级到 AI 模式。
+**注意**：API 模式失败时，CLI 不会自动切换到 AI 模式。Agent 也不应静默切换，因为 AI 模式不会渲染高级排版模块。只有用户接受失去高级排版效果时，才可以显式改用 `--mode ai`。
 
 #### 模式 C：指定主题
 
@@ -364,7 +394,7 @@ md2wechat layout validate --file article.md --json
 
 响应解读：
 - `code: "LAYOUT_VALIDATED"` → 语法正确，可以转换
-- `code: "LAYOUT_VALIDATE_ERRORS"` → 有错误，查看 `data.errors` 了解详情
+- `code: "LAYOUT_VALIDATE_HAS_ERRORS"` → 有错误，查看 `data.errors` 了解详情
 - `data.errors` — 包含错误位置和修复建议
 
 ### 7.2 在文章中使用排版模块
@@ -405,32 +435,36 @@ md2wechat layout show verdict --json
 md2wechat layout show callout --json
 ```
 
+`body_format` 是模块正文语法契约；先按它写临时 Markdown，再运行 `layout validate`。
+
 ### 7.4 测试模块渲染
 
 ```bash
-md2wechat layout render callout --var CONTENT="测试内容" --var LEVEL="info"
-md2wechat layout render cta --var TITLE="立即订阅" --var ACTION="subscribe"
+md2wechat layout render callout --var 'rows=[["测试内容"]]' --json
+md2wechat layout render cta --var title="立即订阅" --var note="持续更新" --json
 ```
 
 ---
 
 ## 八、异常处理与降级
 
-### 8.1 本地 API 服务未启动
+### 8.1 API 模式不可用
 
-**症状**：`convert` 命令返回 `connection refused` 错误
+**症状**：`convert` 命令返回 API key、base URL、网络或远程 API 错误。
 
 **处理**：
 ```bash
-# 1. 检查本地服务状态
-curl -s http://localhost:3000/ || echo "❌ 服务未启动"
+# 1. 本地只读诊断
+md2wechat doctor --json
 
-# 2. 降级到 AI 模式
+# 2. 查看当前解析到的配置
+md2wechat config show --format json
+
+# 3. 如果用户接受不渲染高级排版模块，才显式改用 AI 模式
 md2wechat convert article.md --mode ai --output output.html
-
-# 3. 或者启动本地服务（由用户操作）
-# 用户应该启动 md2wechat API 服务
 ```
+
+不要静默降级。API 模式是高级排版模块的执行边界；切换到 AI 模式会改变输出能力。
 
 ### 8.2 Brand Profile 不存在
 
@@ -438,15 +472,13 @@ md2wechat convert article.md --mode ai --output output.html
 
 **处理**：
 ```bash
-# 1. 发起 3 问流程，引导用户设置品牌档案
-# Agent: 我注意到你还没有设置品牌档案。这能让每篇文章都"像你说的话"。
-#       3 个问题，2 分钟完成：
-#       1. 你希望文章的整体语气是？（例如：犀利实用、温暖鼓励、专业严谨）
-#       2. 有没有你一定要避免的表达方式？（例如：过多 emoji、空泛鸡汤）
-#       3. 如果你有风格参考文件或文件夹，可以告诉我路径（可选）
-
-根据用户回答，创建或编辑 `~/.config/md2wechat/brand.md`。
-# 或等待 md2wechat brand init 命令上线
+# 1. 非阻塞提示一次
+# Agent: 我没有看到 Brand Profile，这次会使用系统默认风格。
+#
+# 2. 继续当前任务
+#
+# 3. 只有用户明确要求设置时，才运行：
+md2wechat brand init
 ```
 
 ### 8.3 排版语法错误
@@ -489,15 +521,15 @@ md2wechat layout validate --file article.md --json
 ```
 1. CLI flag（如 --theme default）
     ↓
-2. Brand Profile（brand.md 中的语气风格、排版约束）
+2. 用户本轮明确指令
     ↓
-3. 环境变量（如 CONVERT_MODE=ai）
+3. Brand Profile（brand.md 中的自然语言偏好）
     ↓
-4. 配置文件（~/.config/md2wechat/config.yaml）
+4. 已解析配置（环境变量 + ~/.config/md2wechat/config.yaml）
     ↓
-5. 排版诊断推荐（基于 43 模块的四目标框架）
+5. CLI discovery 可验证能力（themes/layout/providers/prompts）
     ↓
-6. 硬编码默认值（主题 default，模式 api）
+6. Agent 基于文章目标的保守默认选择
 ```
 
 ---
@@ -507,8 +539,8 @@ md2wechat layout validate --file article.md --json
 ### 场景 A：用户首次发文，无配置无 Brand Profile
 
 ```bash
-# 1. 发现能力（必须）
-md2wechat capabilities --json
+# 1. 发现本次任务需要的能力
+md2wechat doctor --json
 md2wechat themes list --json
 md2wechat layout list --json
 
@@ -516,23 +548,22 @@ md2wechat layout list --json
 md2wechat config show --format json
 # 如果缺少关键配置，提示用户运行 md2wechat config init
 
-# 3. 发起 3 问流程创建 Brand Profile（当命令可用时）
-# 或手动创建 ~/.config/md2wechat/brand.md
+# 3. Brand Profile 不存在时非阻塞提示一次，继续任务
 
-# 4. 验证排版语法
-md2wechat layout validate --file article.md --json
+# 4. 复制原文到临时 Markdown，插入 layout render 生成的模块后验证
+md2wechat layout validate --file /tmp/md2wechat-format/<run-id>/article.formatted.md --json
 
-# 5. 转换
-md2wechat convert article.md --output output.html
+# 5. 转换临时排版稿
+md2wechat convert /tmp/md2wechat-format/<run-id>/article.formatted.md --output output.html
 
-# 6. 预览
-md2wechat preview article.md
+# 6. 预览临时排版稿
+md2wechat preview /tmp/md2wechat-format/<run-id>/article.formatted.md
 
 # 7. 检查发布就绪
-md2wechat inspect article.md --draft --cover ./cover.jpg --json
+md2wechat inspect /tmp/md2wechat-format/<run-id>/article.formatted.md --draft --cover ./cover.jpg --json
 
 # 8. 创建草稿
-md2wechat convert article.md \
+md2wechat convert /tmp/md2wechat-format/<run-id>/article.formatted.md \
   --draft \
   --cover ./cover.jpg \
   --output draft.html
@@ -542,16 +573,16 @@ md2wechat convert article.md \
 
 ```bash
 # 1. 验证排版语法
-md2wechat layout validate --file article.md --json
+md2wechat layout validate --file /tmp/md2wechat-format/<run-id>/article.formatted.md --json
 
 # 2. 转换（复用当前主题和配置）
-md2wechat convert article.md --output output.html
+md2wechat convert /tmp/md2wechat-format/<run-id>/article.formatted.md --output output.html
 
 # 3. 预览
-md2wechat preview article.md
+md2wechat preview /tmp/md2wechat-format/<run-id>/article.formatted.md
 
 # 4. 一键创建草稿和发布
-md2wechat convert article.md \
+md2wechat convert /tmp/md2wechat-format/<run-id>/article.formatted.md \
   --draft \
   --cover ./cover.jpg \
   --theme bytedance
@@ -599,19 +630,20 @@ export IMAGE_API_KEY=your_api_key
 md2wechat convert article.md --output output.html
 ```
 
-### 场景 E：处理 API 服务不可用
+### 场景 E：处理 API 模式不可用
 
 ```bash
-# 1. 检查 API 服务
-curl -s http://localhost:3000/ || echo "服务未启动"
+# 1. 本地诊断
+md2wechat doctor --json
 
-# 2. 降级到 AI 模式
+# 2. 查看当前配置
+md2wechat config show --format json
+
+# 3. 只有用户接受失去高级排版模块时，才显式改用 AI 模式
 md2wechat convert article.md --mode ai --output output.html
 
-# 3. 注意：AI 模式不支持高级排版模块
+# 4. 注意：AI 模式不支持高级排版模块
 # 预期行为：:::module ... ::: 语法被当作普通文本
-
-# 4. 如需使用排版模块，必须启动 API 服务后使用 API 模式
 ```
 
 ---
@@ -634,7 +666,7 @@ md2wechat convert article.md --mode ai --output output.html
 | 预览文章 | `md2wechat preview article.md` |
 | 创建草稿 | `md2wechat convert article.md --draft --cover ./cover.jpg` |
 | 查看模块规范 | `md2wechat layout show hero --json` |
-| 测试模块渲染 | `md2wechat layout render callout --var CONTENT="test" --var LEVEL="info"` |
+| 测试模块渲染 | `md2wechat layout render callout --var 'rows=[["test"]]' --json` |
 
 ---
 
@@ -674,15 +706,16 @@ JSON envelope 格式（v1）：
 
 | code | 含义 | 处理方式 |
 |------|------|---------|
-| `CONVERTED` | 转换成功 | 继续发布流程 |
-| `INSPECTED` | 检查完成 | 查看 `data.readiness` |
+| `CONVERT_COMPLETED` | 转换成功 | 继续发布流程 |
+| `INSPECT_COMPLETED` | 检查完成 | 查看 `data.readiness` |
+| `PREVIEW_READY` | 预览可用 | 打开或检查 `data.output` |
+| `DOCTOR_COMPLETED` | 本地体检完成 | 查看 `data.overall` 和 `data.readiness` |
 | `LAYOUT_VALIDATED` | 排版语法正确 | 可以转换 |
-| `LAYOUT_VALIDATE_ERRORS` | 排版有错误 | 查看 `data.errors` 修复 |
+| `LAYOUT_VALIDATE_HAS_ERRORS` | 排版有错误 | 查看 `data.errors` 修复 |
 | `BRAND_NOT_FOUND` | Brand Profile 不存在 | 可选初始化 |
 | `BRAND_SHOWN` | Brand Profile 已读取 | 使用其中配置 |
 | `CONFIG_SHOWN` | 配置已读取 | 查看 `data` |
 
 ---
 
-*最后更新：与 md2wechat v2.2.0 同步*
-*下一计划版本 (v2.3)：md2wechat brand 命令*
+*最后更新：与 md2wechat v2.3.0 同步*

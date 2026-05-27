@@ -1,5 +1,6 @@
 schema_version: "1"
 name: question
+body_format: json_array
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4
@@ -22,14 +23,14 @@ anti_pattern: |
   问题写成陈述句而非疑问句；
   回答写太长应该拆成正文段落。
 fields:
-  required: []
-  optional:
+  required:
     - name: q
       description: 问题内容（JSON key：q，以问句形式表达）
       example: "模块是否支持所有主题？"
     - name: a
       description: 回答内容（JSON key：a，简洁直接）
       example: "是的，所有主题都会渲染这些模块。"
+  optional: []
 example: |
   :::question
   [{"q":"模块是否支持所有主题？","a":"是的，所有主题都会渲染这些模块。"}]

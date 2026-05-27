@@ -120,6 +120,44 @@ func TestThemeManagerInMemoryLookups(t *testing.T) {
 	}
 }
 
+func TestResolveThemeForModeRejectsIncompatibleThemes(t *testing.T) {
+	tm := NewThemeManager()
+	tm.themes["api-theme"] = Theme{
+		Name:     "api-theme",
+		Type:     "api",
+		APITheme: "default",
+	}
+	tm.themes["ai-theme"] = Theme{
+		Name:   "ai-theme",
+		Type:   "ai",
+		Prompt: "Prompt body",
+	}
+	tm.themes["api-collection"] = Theme{
+		Name: "api-collection",
+		Type: "api",
+	}
+
+	theme, err := tm.ResolveThemeForMode(ModeAPI, "api-theme")
+	if err != nil {
+		t.Fatalf("ResolveThemeForMode(api, api-theme) error = %v", err)
+	}
+	if theme.Name != "api-theme" || theme.APITheme != "default" {
+		t.Fatalf("resolved theme = %#v", theme)
+	}
+
+	if _, err := tm.ResolveThemeForMode(ModeAPI, "ai-theme"); !IsThemeModeMismatch(err) {
+		t.Fatalf("expected API mode AI theme mismatch, got %v", err)
+	}
+
+	if _, err := tm.ResolveThemeForMode(ModeAI, "api-theme"); !IsThemeModeMismatch(err) {
+		t.Fatalf("expected AI mode API theme mismatch, got %v", err)
+	}
+
+	if _, err := tm.ResolveThemeForMode(ModeAPI, "api-collection"); !IsThemeNotSelectable(err) {
+		t.Fatalf("expected API collection to be not selectable, got %v", err)
+	}
+}
+
 func TestThemeManagerLoadThemeAppliesDefaults(t *testing.T) {
 	tm := NewThemeManager()
 	path := filepath.Join(t.TempDir(), "custom.yaml")

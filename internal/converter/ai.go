@@ -100,62 +100,38 @@ func (c *converter) buildAIPrompt(req *ConvertRequest) (string, error) {
 		prompt = BuildCustomAIPrompt(req.CustomPrompt)
 	} else {
 		// 否则使用内置主题的提示词
-		theme, err := c.theme.GetTheme(req.Theme)
+		theme, err := c.theme.ResolveThemeForMode(ModeAI, req.Theme)
 		if err != nil {
-			// 如果找不到主题，使用通用提示词
-			prompt = c.getGenericPrompt()
-		} else if theme.Type != "ai" {
-			// 不是 AI 主题，使用通用提示词
-			c.log.Warn("theme is not AI mode, using generic prompt",
-				zap.String("theme", req.Theme),
-				zap.String("type", theme.Type))
-			prompt = c.getGenericPrompt()
-		} else {
-			// 使用 PromptBuilder 构建完整 Prompt
-			vars := map[string]string{
-				"TITLE": metadata.Title,
-			}
-			prompt, err = c.promptBuilder.BuildPromptFromTheme(theme, markdown, vars)
-			if err != nil {
-				c.log.Warn("build prompt from theme failed, using raw prompt", zap.Error(err))
-				prompt = theme.Prompt + "\n\n```\n" + markdown + "\n```"
-			} else {
-				// 验证 Prompt 内容
-				validation := ValidatePromptContent(prompt)
-				if !validation.Valid {
-					c.log.Warn("prompt validation failed",
-						zap.Strings("errors", validation.Errors))
-				}
-				if len(validation.Warnings) > 0 {
-					c.log.Debug("prompt validation warnings",
-						zap.Strings("warnings", validation.Warnings))
-				}
-			}
-			return prompt, nil
+			return "", err
 		}
+
+		// 使用 PromptBuilder 构建完整 Prompt
+		vars := map[string]string{
+			"TITLE": metadata.Title,
+		}
+		prompt, err = c.promptBuilder.BuildPromptFromTheme(theme, markdown, vars)
+		if err != nil {
+			c.log.Warn("build prompt from theme failed, using raw prompt", zap.Error(err))
+			prompt = theme.Prompt + "\n\n```\n" + markdown + "\n```"
+		} else {
+			// 验证 Prompt 内容
+			validation := ValidatePromptContent(prompt)
+			if !validation.Valid {
+				c.log.Warn("prompt validation failed",
+					zap.Strings("errors", validation.Errors))
+			}
+			if len(validation.Warnings) > 0 {
+				c.log.Debug("prompt validation warnings",
+					zap.Strings("warnings", validation.Warnings))
+			}
+		}
+		return prompt, nil
 	}
 
 	// 添加 Markdown 内容
 	fullPrompt := prompt + "\n\n```\n" + markdown + "\n```"
 
 	return fullPrompt, nil
-}
-
-// getGenericPrompt 获取通用提示词
-func (c *converter) getGenericPrompt() string {
-	return `你是一个专业的微信公众号排版助手。请将以下 Markdown 内容转换为微信公众号兼容的 HTML。
-
-## 样式要求
-- 使用内联 CSS（style 属性）
-- 整洁大方的排版
-- 适当的间距和行高
-
-## 重要规则
-1. 所有 CSS 必须使用内联 style 属性
-2. 不使用外部样式表或 <style> 标签
-3. 只使用安全的 HTML 标签
-4. 图片使用占位符格式：<!-- IMG:index -->
-5. 返回完整的 HTML，不需要其他说明文字`
 }
 
 // PrepareAIRequest 准备 AI 转换请求（供外部调用）

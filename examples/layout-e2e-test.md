@@ -65,7 +65,7 @@ not-fit: 只需纯文字输出的场景
 ## 三、证据类（evidence）
 
 :::quote
-content: 好的排版不是装饰，是帮读者省时间。
+quote: 好的排版不是装饰，是帮读者省时间。
 source: geekjourney
 :::
 

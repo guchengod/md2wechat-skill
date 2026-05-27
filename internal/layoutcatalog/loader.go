@@ -150,6 +150,10 @@ func parseLayoutSpec(data []byte) (*LayoutSpec, error) {
 	if spec.Name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
+	normalizeBodyFormat(&spec)
+	if !ValidBodyFormats[spec.BodyFormat] {
+		return nil, fmt.Errorf("invalid body_format %q", spec.BodyFormat)
+	}
 	if spec.Category == "" {
 		return nil, fmt.Errorf("category is required")
 	}
@@ -164,10 +168,34 @@ func parseLayoutSpec(data []byte) (*LayoutSpec, error) {
 	if spec.Fields != nil && spec.Rows != nil {
 		return nil, fmt.Errorf("fields and rows are mutually exclusive")
 	}
+	if spec.BodyFormat == BodyFormatRows && spec.Rows == nil {
+		return nil, fmt.Errorf("body_format rows requires rows")
+	}
+	if spec.BodyFormat != BodyFormatRows && spec.Rows != nil {
+		return nil, fmt.Errorf("rows requires body_format rows")
+	}
 	if spec.Metadata.Author == "" || spec.Metadata.Provenance == "" {
 		return nil, fmt.Errorf("metadata.author and metadata.provenance are required")
 	}
 	return &spec, nil
+}
+
+func normalizeBodyFormat(spec *LayoutSpec) {
+	if spec.BodyFormat != "" {
+		return
+	}
+	if spec.Rows != nil {
+		spec.BodyFormat = BodyFormatRows
+		return
+	}
+	if bodyKind := exampleJSONBodyKind(spec.Example); bodyKind == "object" {
+		spec.BodyFormat = BodyFormatJSONObject
+		return
+	} else if bodyKind == "array" {
+		spec.BodyFormat = BodyFormatJSONArray
+		return
+	}
+	spec.BodyFormat = BodyFormatFields
 }
 
 func (c *Catalog) Get(name string) (*LayoutSpec, bool) {

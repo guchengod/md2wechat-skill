@@ -8,6 +8,7 @@ import (
 	"github.com/geekjourneyx/md2wechat-skill/internal/config"
 	"github.com/geekjourneyx/md2wechat-skill/internal/converter"
 	"github.com/geekjourneyx/md2wechat-skill/internal/image"
+	"github.com/geekjourneyx/md2wechat-skill/internal/layoutcatalog"
 	"github.com/geekjourneyx/md2wechat-skill/internal/promptcatalog"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +32,17 @@ type providerView struct {
 	SupportsSize    bool                      `json:"supports_size"`
 	Current         bool                      `json:"current"`
 	Configured      bool                      `json:"configured"`
+}
+
+type themeView struct {
+	Name               string               `json:"name"`
+	Type               string               `json:"type"`
+	Description        string               `json:"description"`
+	Version            string               `json:"version,omitempty"`
+	APITheme           string               `json:"api_theme,omitempty"`
+	Selectable         bool                 `json:"selectable"`
+	MetadataIncomplete bool                 `json:"metadata_incomplete"`
+	Style              converter.ThemeStyle `json:"style,omitempty"`
 }
 
 var (
@@ -99,7 +111,7 @@ var themesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available themes",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		themes, err := listThemes()
+		themes, err := listThemeViews()
 		if err != nil {
 			return wrapCLIError(codeError, err, err.Error())
 		}
@@ -121,7 +133,7 @@ var themesShowCmd = &cobra.Command{
 		if err != nil {
 			return newCLIError(codeConfigInvalid, err.Error())
 		}
-		responseSuccessWith(codeThemesShown, "Theme shown", map[string]any{"theme": theme})
+		responseSuccessWith(codeThemesShown, "Theme shown", map[string]any{"theme": themeToView(*theme)})
 		return nil
 	},
 }
@@ -268,12 +280,37 @@ func listThemes() ([]converter.Theme, error) {
 	return tm.ListThemeDefinitions(), nil
 }
 
+func themeToView(theme converter.Theme) themeView {
+	return themeView{
+		Name:               theme.Name,
+		Type:               theme.Type,
+		Description:        theme.Description,
+		Version:            theme.Version,
+		APITheme:           theme.APITheme,
+		Selectable:         theme.Selectable(),
+		MetadataIncomplete: theme.MetadataIncomplete(),
+		Style:              theme.Style,
+	}
+}
+
+func listThemeViews() ([]themeView, error) {
+	themes, err := listThemes()
+	if err != nil {
+		return nil, err
+	}
+	views := make([]themeView, 0, len(themes))
+	for _, theme := range themes {
+		views = append(views, themeToView(theme))
+	}
+	return views, nil
+}
+
 func buildCapabilitiesData() (map[string]any, error) {
 	providers, err := buildProviderViews()
 	if err != nil {
 		return nil, err
 	}
-	themes, err := listThemes()
+	themes, err := listThemeViews()
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +325,7 @@ func buildCapabilitiesData() (map[string]any, error) {
 			"convert", "inspect", "preview", "config", "write", "humanize", "upload_image",
 			"download_and_upload", "generate_image", "generate_cover", "generate_infographic", "create_draft",
 			"create_image_post", "test-draft", "providers", "themes",
-			"prompts", "capabilities", "version",
+			"prompts", "layout", "brand", "doctor", "capabilities", "version",
 		},
 		"convert": map[string]any{
 			"default_mode":     "api",
@@ -299,10 +336,41 @@ func buildCapabilitiesData() (map[string]any, error) {
 		},
 		"providers":         providers,
 		"themes":            themes,
+		"layout":            buildLayoutCapabilityData(),
 		"prompts":           allPrompts,
 		"prompt_kinds":      sortedPromptKinds(allPrompts),
 		"prompt_archetypes": sortedPromptArchetypes(allPrompts),
 	}, nil
+}
+
+func buildLayoutCapabilityData() map[string]any {
+	cat, err := layoutcatalog.DefaultCatalog()
+	if err != nil {
+		return map[string]any{
+			"available": false,
+			"error":     err.Error(),
+		}
+	}
+	modules := cat.ListFiltered(layoutcatalog.ListFilter{})
+	categorySet := map[string]struct{}{}
+	for _, module := range modules {
+		categorySet[module.Category] = struct{}{}
+	}
+	categories := make([]string, 0, len(categorySet))
+	for category := range categorySet {
+		categories = append(categories, category)
+	}
+	sort.Strings(categories)
+
+	return map[string]any{
+		"available":         true,
+		"module_count":      len(modules),
+		"supports_validate": true,
+		"api_mode_only":     true,
+		"schema_version":    layoutcatalog.SchemaVersion,
+		"serves":            []string{"attention", "readability", "memorability", "conversion"},
+		"categories":        categories,
+	}
 }
 
 func parsePromptVars(items []string) (map[string]string, error) {

@@ -34,7 +34,7 @@ var (
 
 var layoutCmd = &cobra.Command{
 	Use:   "layout",
-	Short: "Discover and render advanced layout modules (:::block syntax)",
+	Short: "Discover and render advanced layout modules (:::module syntax)",
 }
 
 var layoutListCmd = &cobra.Command{
@@ -56,6 +56,7 @@ var layoutListCmd = &cobra.Command{
 		for _, m := range mods {
 			summaries = append(summaries, map[string]any{
 				"name":          m.Name,
+				"body_format":   m.BodyFormat,
 				"category":      m.Category,
 				"serves":        m.Serves,
 				"content_types": m.ContentTypes,
@@ -139,7 +140,7 @@ var layoutRenderCmd = &cobra.Command{
 
 var layoutValidateCmd = &cobra.Command{
 	Use:   "validate",
-	Short: "Validate :::block usage in a Markdown file",
+	Short: "Validate :::module usage in a Markdown file",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := layoutcatalog.DefaultCatalog()
 		if err != nil {

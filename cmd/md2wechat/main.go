@@ -76,24 +76,30 @@ const (
 	codeBrandShown       = "BRAND_SHOWN"
 	codeBrandNotFound    = "BRAND_NOT_FOUND"
 	codeBrandReadFailed  = "BRAND_READ_FAILED"
+
+	codeDoctorCompleted = "DOCTOR_COMPLETED"
 )
 
 type cliResponse struct {
-	Success       bool          `json:"success"`
-	Code          string        `json:"code,omitempty"`
-	Message       string        `json:"message,omitempty"`
-	SchemaVersion string        `json:"schema_version"`
-	Status        action.Status `json:"status"`
-	Retryable     bool          `json:"retryable"`
-	Data          any           `json:"data,omitempty"`
-	Error         string        `json:"error,omitempty"`
+	Success       bool           `json:"success"`
+	Code          string         `json:"code,omitempty"`
+	Message       string         `json:"message,omitempty"`
+	SchemaVersion string         `json:"schema_version"`
+	Status        action.Status  `json:"status"`
+	Retryable     bool           `json:"retryable"`
+	Data          any            `json:"data,omitempty"`
+	Error         string         `json:"error,omitempty"`
+	ErrorDetails  map[string]any `json:"error_details,omitempty"`
+	NextActions   []string       `json:"next_actions,omitempty"`
 }
 
 type cliError struct {
-	Code      string
-	Message   string
-	Retryable bool
-	Err       error
+	Code        string
+	Message     string
+	Retryable   bool
+	Err         error
+	Details     map[string]any
+	NextActions []string
 }
 
 func (e *cliError) Error() string {
@@ -118,6 +124,10 @@ func (e *cliError) Unwrap() error {
 
 func newCLIError(code, message string) error {
 	return &cliError{Code: code, Message: message}
+}
+
+func newCLIErrorWithDetails(code, message string, details map[string]any, nextActions []string) error {
+	return &cliError{Code: code, Message: message, Details: details, NextActions: nextActions}
 }
 
 func wrapCLIError(code string, err error, message string) error {
@@ -323,6 +333,9 @@ Examples:
 	// brand command
 	rootCmd.AddCommand(brandCmd)
 
+	// doctor command
+	rootCmd.AddCommand(doctorCmd)
+
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		responseError(err)
@@ -367,8 +380,12 @@ func responseError(err error) {
 
 func responseErrorWith(code string, err error) {
 	retryable := false
+	var errorDetails map[string]any
+	var nextActions []string
 	if cliErr, ok := extractCLIError(err); ok {
 		retryable = cliErr.Retryable
+		errorDetails = cliErr.Details
+		nextActions = cliErr.NextActions
 	}
 	responseWith(cliResponse{
 		Success:       false,
@@ -378,6 +395,8 @@ func responseErrorWith(code string, err error) {
 		Status:        action.StatusFailed,
 		Retryable:     retryable,
 		Error:         err.Error(),
+		ErrorDetails:  errorDetails,
+		NextActions:   nextActions,
 	})
 	exitFunc(1)
 }

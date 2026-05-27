@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-05-27
+
+### Added
+- Added `md2wechat doctor --json`, a local-only readiness diagnostic for config loading, default convert mode, API key presence, default theme compatibility, layout catalog availability, and WeChat draft credential presence. `doctor` does not perform live authentication, upload images, or create drafts.
+- Added `doctor` to `capabilities --json` command discovery.
+- Added explicit `body_format` metadata to layout module specs and JSON discovery so Agents can choose `fields`, `rows`, `json_object`, or `json_array` without inferring syntax from examples.
+
+### Changed
+- Tightened theme discovery and compatibility metadata with `selectable`, `metadata_incomplete`, and `style` fields so Agents can choose themes from current CLI truth rather than guessing from stale docs.
+- Made API/AI theme compatibility fail closed during conversion: API mode rejects AI themes, AI mode rejects API themes, and non-selectable theme collections cannot be used as concrete themes.
+- Simplified `version --json` to the stable version contract only, removing non-essential build metadata from the CLI response.
+- Updated README, discovery docs, FAQ, config docs, Agent guide, and both skill entry points to align with the discovery-first `doctor` → temporary formatted Markdown → `layout validate` → `convert` flow.
+- Calibrated Agent-facing discovery guidance to use the smallest task-specific discovery set instead of a fixed full-catalog startup sequence.
+- Replaced stale public block-syntax wording with concrete `:::module` / `:::hero` style examples.
+
+### Fixed
+- Fixed discovery drift where capabilities did not fully reflect the active layout, brand, and doctor commands.
+- Fixed the Agent layout workflow boundary so automated formatting no longer needs to mutate the user's source Markdown.
+- Fixed `layout validate` so malformed legacy-style openers fail closed instead of being ignored.
+- Fixed JSON layout module required-field metadata so empty JSON objects no longer validate or render as usable modules.
+
+### Technical Details
+- **New package**: `internal/doctor`
+- **New command**: `doctor`
+- **New contract tests**: CLI JSON envelope tests for doctor readiness, theme compatibility, discovery truth, and minimal version output
+- **Product acceptance**: validated `examples/article.md` through generated temporary Markdown, `layout validate`, API `convert`, exact `preview`, raw `:::` absence checks, and source hash preservation
+
+### Migration Guide
+No migration required. Existing conversion, preview, upload, draft, theme, and layout commands remain compatible. Agents should prefer `doctor --json` before API-dependent execution and keep the user's source Markdown read-only when generating formatted temporary artifacts.
+
 ## [2.2.1] - 2026-05-25
 
 ### Fixed
@@ -28,13 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Markdown Expression Diagnosis（排版诊断层）**: `skills/md2wechat/SKILL.md` 新增三步诊断框架
   - Step 1 意图识别：目标读者、conversion goal、memorability anchor
   - Step 2 内容映射：四目标框架（attention / readability / memorability / conversion）
-  - Step 3 模块选择：结合 Brand Profile limits 和 layout.opening 从 43 个模块选择最优组合
+  - Step 3 模块选择：结合 Brand Profile 自然语言偏好和 CLI discovery 输出，从可验证模块中选择组合
 - **Brand Profile 协议**: `SKILL.md` 新增完整 Agent 读取协议
-  - 优先级链：CLI flag → brand.md → config.yaml → Layout Policy 推荐 → 硬编码默认
-  - 降级规则：文件不存在/字段缺失时各字段的回退行为
-  - Sanity Caps：max_modules(43) / max_cta(2) / max_quotes(10) / max_hero(1)，超出自动截断并 warn
-  - style_ref：支持指向单个 .md 文件或目录（遍历目录下所有文件）
-  - 3 问引导流程：BRAND_NOT_FOUND 时 Agent 主动引导用户配置品牌档案
+  - 优先级链：CLI flag → 用户本轮明确指令 → Brand Profile 自由文本偏好 → config.yaml → CLI discovery → Agent 保守默认
+  - 解释规则：Brand Profile 是自由 Markdown prompt，不按 YAML 或固定字段解析
+  - 主题/模块偏好必须通过 `themes list --json` 和 `layout list/show` 验证；无效主题不静默降级
+  - 3 问引导流程：用户主动设置 Brand Profile 时生成可读 Markdown，而不是结构化配置
 - **`docs/AGENT-GUIDE.md`**: AI Agent 操作手册，12 大章节 685 行，覆盖
   - 能力发现（5 条 discovery 命令）
   - Brand Profile 操作（check / init / 读取 / 降级）
@@ -68,11 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] - 2026-04-27
 
 ### Added
-- **`md2wechat layout` command tree**: 4 new CLI subcommands for AI-agent-friendly discovery of 43 advanced WeChat layout modules (:::block syntax)
+- **`md2wechat layout` command tree**: 4 new CLI subcommands for AI-agent-friendly discovery of 43 advanced WeChat layout modules (`:::module` syntax)
   - `layout list [--category] [--serves] [--content-type] [--industry] [--tag] --json` — filtered module discovery
   - `layout show <name> --json` — full spec with fields, when_to_use, example, metadata
-  - `layout render <name> --var KEY=VALUE --json` — generate :::block syntax from structured inputs
-  - `layout validate [--file | --stdin] --json` — validate :::block usage, unknown modules warn not error
+  - `layout render <name> --var KEY=VALUE --json` — generate `:::module` syntax from structured inputs
+  - `layout validate [--file | --stdin] --json` — validate `:::module` usage, unknown modules warn not error
 - **43 built-in layout modules** across 7 categories (opening, judgment, infographic, evidence, brand, conversion, sprint4)
 - **4-level module override**: builtin → ~/.config/md2wechat/layout/ → ./layout/ → $MD2WECHAT_LAYOUT_DIR
 - **`internal/layoutcatalog` package**: schema, loader, renderer, validator with 20+ unit tests

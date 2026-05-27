@@ -66,11 +66,11 @@ func (c *converter) convertViaAPI(req *ConvertRequest) *ConvertResult {
 		Success:   false,
 	}
 
-	// 获取 API 主题名
-	apiTheme, err := c.theme.GetAPITheme(req.Theme)
+	theme, err := c.theme.ResolveThemeForMode(ModeAPI, req.Theme)
 	if err != nil {
-		// 如果不是预定义的 API 主题，直接使用传入的主题名
-		apiTheme = req.Theme
+		result.Error = err.Error()
+		result.Retryable = false
+		return result
 	}
 
 	// 创建 API 转换器，传入配置中的 base URL
@@ -92,7 +92,7 @@ func (c *converter) convertViaAPI(req *ConvertRequest) *ConvertResult {
 	// 调用 API
 	html, err := apiConv.Convert(&APIRequest{
 		Markdown:       req.Markdown,
-		Theme:          apiTheme,
+		Theme:          theme.APITheme,
 		FontSize:       req.FontSize,
 		BackgroundType: req.BackgroundType,
 	}, req.APIKey)

@@ -27,6 +27,9 @@ func TestLayoutListJSONIncludesHero(t *testing.T) {
 	if !strings.Contains(string(stdout), `"hero"`) {
 		t.Errorf("expected hero in list output, got:\n%s", stdout)
 	}
+	if !strings.Contains(string(stdout), `"body_format"`) {
+		t.Errorf("expected body_format in list output, got:\n%s", stdout)
+	}
 }
 
 func TestLayoutShowJSONReturnsSpec(t *testing.T) {
@@ -55,6 +58,10 @@ func TestLayoutShowJSONReturnsSpec(t *testing.T) {
 	data, _ := response["data"].(map[string]any)
 	if data["spec"] == nil {
 		t.Fatalf("expected spec in response data: %#v", data)
+	}
+	spec, _ := data["spec"].(map[string]any)
+	if spec["body_format"] != layoutcatalog.BodyFormatFields {
+		t.Fatalf("expected hero body_format fields, got %#v", spec["body_format"])
 	}
 }
 

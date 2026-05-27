@@ -307,16 +307,54 @@ func validateConvertConfig() error {
 		}
 	}
 
-	if convertUpload || convertDraft {
-		if err := cfg.ValidateForWeChat(); err != nil {
-			return wrapCLIError(codeConfigInvalid, err, err.Error())
-		}
-	}
 	if strings.TrimSpace(convertCoverImage) != "" && strings.TrimSpace(convertCoverMediaID) != "" {
 		return newCLIError(codeConvertInvalid, "--cover and --cover-media-id are mutually exclusive")
 	}
 	if strings.TrimSpace(convertCoverMediaID) != "" && looksLikeURL(convertCoverMediaID) {
 		return newCLIError(codeConvertInvalid, "--cover-media-id expects a WeChat media_id, not a URL")
+	}
+
+	if err := validateConvertThemeCompatibility(); err != nil {
+		return err
+	}
+
+	if convertUpload || convertDraft {
+		if err := cfg.ValidateForWeChat(); err != nil {
+			return wrapCLIError(codeConfigInvalid, err, err.Error())
+		}
+	}
+	return nil
+}
+
+func validateConvertThemeCompatibility() error {
+	mode := converter.ConvertMode(convertMode)
+	if mode == "" {
+		mode = converter.ModeAPI
+	}
+	if mode == converter.ModeAI && strings.TrimSpace(convertCustomPrompt) != "" {
+		return nil
+	}
+
+	themeManager := converter.NewThemeManager()
+	if _, err := themeManager.ResolveThemeForMode(mode, convertTheme); err != nil {
+		details := map[string]any{
+			"mode":  string(mode),
+			"theme": convertTheme,
+		}
+		nextActions := []string{
+			"Run md2wechat themes list --json and choose a selectable theme for the selected mode.",
+		}
+
+		switch {
+		case converter.IsThemeNotFound(err):
+			return newCLIErrorWithDetails("THEME_NOT_FOUND", err.Error(), details, nextActions)
+		case converter.IsThemeNotSelectable(err):
+			return newCLIErrorWithDetails("THEME_NOT_SELECTABLE", err.Error(), details, nextActions)
+		case converter.IsThemeModeMismatch(err):
+			return newCLIErrorWithDetails("THEME_MODE_MISMATCH", err.Error(), details, nextActions)
+		default:
+			return wrapCLIError(codeConvertInvalid, err, err.Error())
+		}
 	}
 
 	return nil

@@ -1,5 +1,6 @@
 schema_version: "1"
 name: changelog
+body_format: json_object
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4

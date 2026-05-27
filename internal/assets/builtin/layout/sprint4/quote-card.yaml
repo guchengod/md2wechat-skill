@@ -1,5 +1,6 @@
 schema_version: "1"
 name: quote-card
+body_format: json_object
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4
@@ -21,11 +22,11 @@ anti_pattern: |
   内容超过 2 句话失去金句的冲击力；
   source 写太长（应该简短）。
 fields:
-  required: []
-  optional:
+  required:
     - name: text
       description: 金句内容（JSON key：text，必填。写成单行 JSON 对象：{"text":"...","source":"..."}）
       example: "结构先于风格，骨架决定气质"
+  optional:
     - name: source
       description: 来源说明（JSON key：source）
       example: "内容设计原则"

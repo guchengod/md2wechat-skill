@@ -32,7 +32,7 @@
 | | 其他工具 | md2wechat |
 |---|---|---|
 | **输出一致性** | LLM 每次不同 | API 模式确定性输出，同样 Markdown 永远相同 |
-| **排版系统** | 靠 prompt 碰运气 | 43 个结构化排版模块（`:::block` 语法），API 专属 |
+| **排版系统** | 靠 prompt 碰运气 | 43 个结构化排版模块（`:::module` 语法），API 专属 |
 | **主题数量** | 无 / 寥寥几个 | 40+ 专业主题，微信渲染精调 |
 | **全流程** | 只做格式转换 | 写作 → 去 AI 痕 → 排版 → AI 配图 → 上传 → 推送草稿 |
 | **Agent 集成** | 无结构约定 | JSON envelope、capabilities 端点、discovery 命令 |
@@ -49,7 +49,7 @@
 
 **API 模式专属能力：**
 
-- ✦ **43 个高级排版模块** — `:::block hero`、`:::block callout`、`:::block timeline`… 结构化公众号内容设计语言，详见 [高级排版指南](#layout)
+- ✦ **43 个高级排版模块** — `:::hero`、`:::callout`、`:::timeline`… 结构化公众号内容设计语言，详见 [高级排版指南](#layout)
 - ✦ **40+ 专业主题** — Minimal · Focus · Elegant · Bold 四大系列，微信渲染精调，完整预览 [theme-gallery](https://md2wechat.app/theme-gallery)
 - ✦ **确定性输出** — 同样 Markdown 每次结果完全一致，适合团队协作和自动化发布
 - ✦ **秒级响应** — 无需等待 LLM 生成，适合高频发布场景
@@ -153,24 +153,24 @@ md2wechat convert article.md --draft --cover cover.jpg  # 4. 推送草稿
 
 ## 高级排版模块（API 专属）
 
-> **仅 API 模式可用。** 高级排版模块是 md2wechat 独有的能力 — 基于 `:::block` 语法，提供 43 个结构化排版组件，是专为微信公众号设计的内容排版语言。不是 prompt，是一套确定性的设计系统。
+> **仅 API 模式可用。** 高级排版模块是 md2wechat 独有的能力 — 基于 `:::module` 语法，提供 43 个结构化排版组件，是专为微信公众号设计的内容排版语言。不是 prompt，是一套确定性的设计系统。
 
-### `:::block` 语法示例
+### `:::module` 语法示例
 
 在 Markdown 中用 `:::` 包裹排版块：
 
 ```markdown
-:::block hero
+:::hero
 eyebrow: 深度观察
 title: AI 时代的公众号写作
 subtitle: 为什么你需要重新定义「好内容」
 :::
 
-:::block callout type=tip
+:::callout
 高级排版模块仅在 API 模式下生效。需要 API Key，扫码联系作者申请。
 :::
 
-:::block timeline
+:::timeline
 - 2024：GPT-4 发布，内容生产门槛归零
 - 2025：AI 写作工具爆发，同质化严重
 - 2026：高质量、有视角的内容成为稀缺品
@@ -190,9 +190,11 @@ md2wechat layout list --serves conversion --json
 # 查看模块完整规格
 md2wechat layout show hero --json
 
-# 验证文章中的 :::block 用法
+# 验证文章中的 :::module 用法
 md2wechat layout validate --file article.md --json
 ```
+
+`layout list --json` 和 `layout show --json` 会显示模块的 `body_format`：`fields` / `rows` / `json_object` / `json_array`。按这个字段写模块正文，`example` 只作参考。
 
 保姆级教程（43 个模块全覆盖）见 [docs/LAYOUT.md](docs/LAYOUT.md)。
 
@@ -200,15 +202,18 @@ md2wechat layout validate --file article.md --json
 
 ## Agent 发现命令
 
-在 Coding Agent 或自动化脚本中，先执行 discovery 命令，不要靠猜：
+在 Coding Agent 或自动化脚本中，用 discovery 命令做事实来源，但按任务运行最小必要集合，不要把所有 catalog 都当成固定启动流程：
 
 ```bash
-md2wechat capabilities --json              # 当前实例能力总览与默认配置
-md2wechat themes list --json               # 所有可用主题
-md2wechat prompts list --kind image --json # 图片 prompt catalog
-md2wechat providers list --json            # 图片生成 provider
-md2wechat layout list --json               # 高级排版模块列表
+md2wechat themes list --json               # 排版选主题时使用，按 selectable/type 判断能否用于当前模式
+md2wechat layout list --json               # 高级排版选模块时使用
+md2wechat doctor --json                    # API、草稿、上传或配置 readiness 排障时使用
+md2wechat prompts list --kind image --json # 图片 prompt 选择时使用
+md2wechat providers list --json            # 图片生成 provider 选择时使用
+md2wechat capabilities --json              # 版本、命令能力或行为边界不确定时使用
 ```
+
+Agent 排版时应保持原始 Markdown 只读：把文章复制到临时 Markdown，按需用 `layout render` 插入少量模块，先 `layout validate`，再把临时稿交给 `convert`。只有用户明确要求时，才把生成稿保存到源文件旁边。
 
 所有命令加 `--json` 后 stdout 只输出 JSON envelope，适合脚本和 Agent 直接消费。
 
@@ -270,7 +275,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 OpenClaw 用户可以通过 ClawHub 直接安装：[clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.0.7/install-openclaw.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.0/install-openclaw.sh | bash
 ```
 
 ---
@@ -297,7 +302,7 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 |------|------|
 | [快速入门](docs/QUICKSTART.md) | 详细图文教程，新手优先看这里 |
 | [完整使用说明](docs/USAGE.md) | 所有命令和选项 |
-| [高级排版模块](docs/LAYOUT.md) | :::block 语法保姆级教程，43 个模块全覆盖 |
+| [高级排版模块](docs/LAYOUT.md) | :::module 语法保姆级教程，43 个模块全覆盖 |
 | [能力发现](docs/DISCOVERY.md) | discovery 命令与 Prompt Catalog |
 | [安装指南](docs/INSTALL.md) | 多平台安装（npm / go / install.sh / Windows） |
 | [配置指南](docs/CONFIG.md) | 配置文件与环境变量完整说明 |
@@ -318,7 +323,7 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 
 可以。AI 模式不需要 API Key，直接加 `--mode ai` 即可。API 模式需要申请，扫码联系作者。
 
-**Q: 高级排版模块（:::block）只有 API 模式才有？**
+**Q: 高级排版模块（:::module）只有 API 模式才有？**
 
 是的。43 个结构化排版模块是 API 服务的核心能力，不依赖外部 LLM，输出确定。
 

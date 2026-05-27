@@ -1,6 +1,7 @@
 package layoutcatalog
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,10 +18,18 @@ func (c *Catalog) Render(name string, vars map[string]any) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("%w: %s", ErrUnknownModule, name)
 	}
-	if spec.Rows != nil {
+	switch spec.BodyFormat {
+	case BodyFormatRows:
 		return renderRows(spec, vars)
+	case BodyFormatJSONObject:
+		return renderJSONFields(spec, vars, "object")
+	case BodyFormatJSONArray:
+		return renderJSONFields(spec, vars, "array")
+	case BodyFormatFields, "":
+		return renderFields(spec, vars)
+	default:
+		return "", fmt.Errorf("%w: unsupported body_format %q", ErrInvalidFieldValue, spec.BodyFormat)
 	}
-	return renderFields(spec, vars)
 }
 
 func renderFields(spec *LayoutSpec, vars map[string]any) (string, error) {
@@ -49,6 +58,47 @@ func renderFields(spec *LayoutSpec, vars map[string]any) (string, error) {
 			fmt.Fprintf(&b, "%s: %s\n", f.Name, val)
 		}
 	}
+	b.WriteString(":::\n")
+	return b.String(), nil
+}
+
+func renderJSONFields(spec *LayoutSpec, vars map[string]any, bodyKind string) (string, error) {
+	obj := map[string]any{}
+	if spec.Fields != nil {
+		for _, f := range spec.Fields.Required {
+			val, ok := lookupString(vars, f.Name)
+			if !ok || val == "" {
+				return "", fmt.Errorf("%w: %s.%s", ErrMissingRequiredField, spec.Name, f.Name)
+			}
+			if err := checkEnum(f, val); err != nil {
+				return "", err
+			}
+			setJSONField(obj, f.Name, parseJSONFieldValue(val))
+		}
+		for _, f := range spec.Fields.Optional {
+			val, ok := lookupString(vars, f.Name)
+			if !ok || val == "" {
+				continue
+			}
+			if err := checkEnum(f, val); err != nil {
+				return "", err
+			}
+			setJSONField(obj, f.Name, parseJSONFieldValue(val))
+		}
+	}
+
+	var body any = obj
+	if bodyKind == "array" {
+		body = []any{obj}
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return "", err
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, ":::%s\n", spec.Name)
+	fmt.Fprintf(&b, "%s\n", encoded)
 	b.WriteString(":::\n")
 	return b.String(), nil
 }
@@ -109,6 +159,53 @@ func renderRows(spec *LayoutSpec, vars map[string]any) (string, error) {
 	}
 	b.WriteString(":::\n")
 	return b.String(), nil
+}
+
+func exampleJSONBodyKind(example string) string {
+	body := strings.Split(example, "\n")
+	for _, ln := range body {
+		trimmed := strings.TrimSpace(ln)
+		if trimmed == "" || strings.HasPrefix(trimmed, ":::") {
+			continue
+		}
+		switch trimmed[0] {
+		case '{':
+			return "object"
+		case '[':
+			return "array"
+		default:
+			return ""
+		}
+	}
+	return ""
+}
+
+func parseJSONFieldValue(val string) any {
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" {
+		return val
+	}
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		var decoded any
+		if err := json.Unmarshal([]byte(trimmed), &decoded); err == nil {
+			return decoded
+		}
+	}
+	return val
+}
+
+func setJSONField(obj map[string]any, key string, value any) {
+	parts := strings.Split(key, ".")
+	current := obj
+	for _, part := range parts[:len(parts)-1] {
+		next, ok := current[part].(map[string]any)
+		if !ok {
+			next = map[string]any{}
+			current[part] = next
+		}
+		current = next
+	}
+	current[parts[len(parts)-1]] = value
 }
 
 func lookupString(vars map[string]any, key string) (string, bool) {

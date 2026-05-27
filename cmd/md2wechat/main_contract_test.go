@@ -39,6 +39,35 @@ func TestRunVersionOutputsJSONEnvelopeWhenRequested(t *testing.T) {
 	}
 }
 
+func TestRunVersionJSONStaysMinimal(t *testing.T) {
+	oldJSON, oldVersion := jsonOutput, Version
+	t.Cleanup(func() {
+		jsonOutput = oldJSON
+		Version = oldVersion
+	})
+
+	jsonOutput = true
+	Version = "2.0.0-test"
+
+	stdout := captureStdout(t, func() {
+		runVersion()
+	})
+
+	var response map[string]any
+	if err := json.Unmarshal(stdout, &response); err != nil {
+		t.Fatalf("unmarshal response: %v\n%s", err, stdout)
+	}
+	data, _ := response["data"].(map[string]any)
+	if data["version"] != "2.0.0-test" {
+		t.Fatalf("version = %#v, want 2.0.0-test", data["version"])
+	}
+	for _, key := range []string{"commit", "built_at", "layout_catalog_version", "layout_module_count"} {
+		if _, ok := data[key]; ok {
+			t.Fatalf("version data should not include %s: %#v", key, data)
+		}
+	}
+}
+
 func TestResponseErrorUsesStableEnvelope(t *testing.T) {
 	oldExit := exitFunc
 	t.Cleanup(func() {
@@ -96,6 +125,55 @@ func TestResponseErrorExtractsCLIErrorCode(t *testing.T) {
 	}
 	if response["schema_version"] != action.SchemaVersion || response["status"] != string(action.StatusFailed) {
 		t.Fatalf("unexpected envelope: %#v", response)
+	}
+	if exitCode != 1 {
+		t.Fatalf("exit code = %d, want 1", exitCode)
+	}
+}
+
+func TestResponseErrorIncludesDetailsAndNextActions(t *testing.T) {
+	oldExit := exitFunc
+	t.Cleanup(func() {
+		exitFunc = oldExit
+	})
+
+	exitCode := 0
+	exitFunc = func(code int) {
+		exitCode = code
+	}
+
+	message := "Theme autumn-warm is not available for api mode."
+	stdout := captureStdout(t, func() {
+		err := newCLIErrorWithDetails(
+			"THEME_MODE_MISMATCH",
+			message,
+			map[string]any{
+				"theme":         "autumn-warm",
+				"mode":          "api",
+				"allowed_types": []string{"ai"},
+			},
+			[]string{"Choose a theme that supports api mode."},
+		)
+		responseError(err)
+	})
+
+	var response map[string]any
+	if err := json.Unmarshal(stdout, &response); err != nil {
+		t.Fatalf("unmarshal response: %v\n%s", err, stdout)
+	}
+	if response["success"] != false || response["code"] != "THEME_MODE_MISMATCH" {
+		t.Fatalf("unexpected response: %#v", response)
+	}
+	if response["message"] != message || response["error"] != message {
+		t.Fatalf("unexpected error payload: %#v", response)
+	}
+	errorDetails, _ := response["error_details"].(map[string]any)
+	if errorDetails["theme"] != "autumn-warm" || errorDetails["mode"] != "api" {
+		t.Fatalf("unexpected error details: %#v", response["error_details"])
+	}
+	nextActions, _ := response["next_actions"].([]any)
+	if len(nextActions) != 1 {
+		t.Fatalf("next actions length = %d, want 1: %#v", len(nextActions), response["next_actions"])
 	}
 	if exitCode != 1 {
 		t.Fatalf("exit code = %d, want 1", exitCode)

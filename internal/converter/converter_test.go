@@ -357,6 +357,57 @@ func TestConvertViaAPIStripsFrontMatterBeforeSendingMarkdown(t *testing.T) {
 	}
 }
 
+func TestConvertAPIModeRejectsAIThemeBeforeRemoteCall(t *testing.T) {
+	conv := &converter{
+		cfg: &config.Config{
+			MD2WechatAPIKey:  "api-key",
+			MD2WechatBaseURL: "http://127.0.0.1:1",
+		},
+		log:           zap.NewNop(),
+		theme:         NewThemeManager(),
+		promptBuilder: NewPromptBuilder(),
+	}
+
+	result := conv.Convert(&ConvertRequest{
+		Markdown: "# Title\n\nBody",
+		Mode:     ModeAPI,
+		Theme:    "autumn-warm",
+	})
+	if result.Success {
+		t.Fatalf("expected failed result, got %+v", result)
+	}
+	if !strings.Contains(result.Error, "not valid for api mode") {
+		t.Fatalf("error = %q", result.Error)
+	}
+	if strings.Contains(result.Error, "API call failed") {
+		t.Fatalf("remote API should not be called for theme mismatch: %q", result.Error)
+	}
+}
+
+func TestConvertAIModeRejectsAPIThemeInsteadOfGenericPrompt(t *testing.T) {
+	conv := &converter{
+		cfg:           &config.Config{},
+		log:           zap.NewNop(),
+		theme:         NewThemeManager(),
+		promptBuilder: NewPromptBuilder(),
+	}
+
+	result := conv.Convert(&ConvertRequest{
+		Markdown: "# Title\n\nBody",
+		Mode:     ModeAI,
+		Theme:    "default",
+	})
+	if result.Success {
+		t.Fatalf("expected failed result, got %+v", result)
+	}
+	if result.Prompt != "" || strings.Contains(result.Error, aiModePrefix) {
+		t.Fatalf("expected no generic AI prompt, got %+v", result)
+	}
+	if !strings.Contains(result.Error, "not valid for ai mode") {
+		t.Fatalf("error = %q", result.Error)
+	}
+}
+
 func TestCompleteAIConversionMarksCompletedState(t *testing.T) {
 	result := CompleteAIConversion("<p>ok</p>", nil, "default")
 	if result.Status != action.StatusCompleted {

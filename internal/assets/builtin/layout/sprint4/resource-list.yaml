@@ -1,5 +1,6 @@
 schema_version: "1"
 name: resource-list
+body_format: json_array
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4
@@ -22,14 +23,14 @@ anti_pattern: |
   url 不以 http:// 或 https:// 开头则不会渲染成链接；
   资源名称写太长（简洁命名，说明放 desc）。
 fields:
-  required: []
-  optional:
+  required:
     - name: name
       description: 资源名称（JSON key：name）
       example: "md2wechat 官网"
     - name: url
       description: 链接地址（JSON key：url，需以 http:// 或 https:// 开头）
       example: "https://md2wechat.com"
+  optional:
     - name: desc
       description: 资源简介（JSON key：desc，不是 description，可省略）
       example: "在线 Markdown 转公众号工具"

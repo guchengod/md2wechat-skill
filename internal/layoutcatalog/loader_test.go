@@ -3,7 +3,10 @@ package layoutcatalog
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/geekjourneyx/md2wechat-skill/internal/assets"
 )
 
 func TestLoadBuiltinIncludesHero(t *testing.T) {
@@ -69,6 +72,45 @@ metadata:
 	}
 }
 
+func TestParseLayoutSpecRejectsInvalidBodyFormat(t *testing.T) {
+	yaml := []byte(`schema_version: "1"
+name: bad
+body_format: xml
+version: "1.0.0"
+category: opening
+serves: [attention]
+metadata:
+  author: x
+  provenance: builtin
+`)
+	_, err := parseLayoutSpec(yaml)
+	if err == nil {
+		t.Fatal("expected error for invalid body_format")
+	}
+}
+
+func TestParseLayoutSpecDefaultsLegacyBodyFormat(t *testing.T) {
+	yaml := []byte(`schema_version: "1"
+name: legacy
+version: "1.0.0"
+category: opening
+serves: [attention]
+fields:
+  required:
+    - name: title
+metadata:
+  author: x
+  provenance: custom
+`)
+	spec, err := parseLayoutSpec(yaml)
+	if err != nil {
+		t.Fatalf("parseLayoutSpec failed: %v", err)
+	}
+	if spec.BodyFormat != BodyFormatFields {
+		t.Fatalf("BodyFormat = %q, want %q", spec.BodyFormat, BodyFormatFields)
+	}
+}
+
 func TestEnvOverrideBeatsLocalDir(t *testing.T) {
 	localDir := t.TempDir()
 	localOpening := filepath.Join(localDir, "opening")
@@ -129,11 +171,36 @@ func TestAllBuiltinModulesLoadCleanly(t *testing.T) {
 		t.Errorf("expected at least 38 modules, got %d", got)
 	}
 	for name, m := range c.modules {
+		if m.BodyFormat == "" {
+			t.Errorf("%s missing body_format", name)
+		}
 		if m.Metadata.Provenance == "" {
 			t.Errorf("%s missing provenance", name)
 		}
 		if m.Metadata.InspiredBy == "" && m.Metadata.Provenance == "builtin" {
 			t.Errorf("%s builtin module missing inspired_by", name)
+		}
+	}
+}
+
+func TestAllBuiltinModulesDeclareBodyFormat(t *testing.T) {
+	cats, err := assets.ListBuiltinLayoutCategories()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, cat := range cats {
+		names, err := assets.ListBuiltinLayouts(cat)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range names {
+			data, err := assets.ReadBuiltinLayout(cat, name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(data), "\nbody_format: ") {
+				t.Errorf("%s/%s missing explicit body_format", cat, name)
+			}
 		}
 	}
 }

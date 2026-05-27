@@ -19,3 +19,15 @@ func TestSchemaVersionConstant(t *testing.T) {
 		t.Errorf("SchemaVersion = %q, want %q", SchemaVersion, "1")
 	}
 }
+
+func TestValidBodyFormats(t *testing.T) {
+	want := []string{BodyFormatFields, BodyFormatRows, BodyFormatJSONObject, BodyFormatJSONArray}
+	for _, v := range want {
+		if !ValidBodyFormats[v] {
+			t.Errorf("expected %q to be a valid body_format, missing", v)
+		}
+	}
+	if len(ValidBodyFormats) != len(want) {
+		t.Errorf("ValidBodyFormats should contain exactly %d values, got %d", len(want), len(ValidBodyFormats))
+	}
+}

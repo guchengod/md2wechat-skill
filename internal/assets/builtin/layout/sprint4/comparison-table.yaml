@@ -1,5 +1,6 @@
 schema_version: "1"
 name: comparison-table
+body_format: json_object
 version: "1.0.0"
 since: "1.5.0"
 category: sprint4
@@ -23,8 +24,7 @@ anti_pattern: |
   优点列写成中性描述而非真实优势；
   缺点列写得太轻描淡写失去可信度。
 fields:
-  required: []
-  optional:
+  required:
     - name: left.title
       description: 左侧栏标题（JSON path：left.title）
       example: "优点"
@@ -37,6 +37,7 @@ fields:
     - name: right.items
       description: 右侧条目列表（JSON path：right.items，字符串数组）
       example: '["扩展性差","依赖第三方"]'
+  optional: []
 example: |
   :::comparison-table
   {"left":{"title":"优点","items":["快速部署","低成本","易上手"]},"right":{"title":"缺点","items":["扩展性差","依赖第三方"]}}

@@ -69,3 +69,57 @@ func TestValidateUnknownModuleWarns(t *testing.T) {
 		t.Errorf("expected one warning for futuristic-block, got %+v", r.Warnings)
 	}
 }
+
+func TestValidateInvalidBlockOpenerErrors(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	md := ":::block hero\ntitle: Wrong syntax\n:::\n"
+	r := c.Validate(md)
+	if len(r.Errors) == 0 {
+		t.Fatal("expected invalid opener error")
+	}
+	if r.Errors[0].Message != "invalid layout block opener" {
+		t.Fatalf("unexpected error: %+v", r.Errors[0])
+	}
+}
+
+func TestValidateJSONFields(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	md := ":::definition\n{\"term\":\"OKR\",\"def\":\"目标与关键结果\",\"termLabel\":\"术语\"}\n:::\n"
+	r := c.Validate(md)
+	if len(r.Errors) != 0 {
+		t.Fatalf("expected JSON definition to validate, got %v", r.Errors)
+	}
+}
+
+func TestValidateJSONFieldsRejectsMissingRequired(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	md := ":::definition\n{\"term\":\"OKR\"}\n:::\n"
+	r := c.Validate(md)
+	if len(r.Errors) == 0 {
+		t.Fatal("expected missing def error")
+	}
+	if r.Errors[0].Module != "definition" || r.Errors[0].Field != "def" {
+		t.Fatalf("unexpected error: %+v", r.Errors[0])
+	}
+}
+
+func TestValidateJSONArrayRejectsEmptyObject(t *testing.T) {
+	c := NewCatalog()
+	if err := c.Load(); err != nil {
+		t.Fatal(err)
+	}
+	md := ":::question\n[{}]\n:::\n"
+	r := c.Validate(md)
+	if len(r.Errors) == 0 {
+		t.Fatal("expected missing q/a errors")
+	}
+}

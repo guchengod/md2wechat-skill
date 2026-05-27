@@ -4,15 +4,16 @@
 
 这组命令的定位不是替代 `--help`，而是提供**可机读、可枚举、可提前探测**的能力接口。
 
-## 推荐顺序
+## 推荐使用方式
 
-对于 Agent、脚本或 CI，建议按下面的顺序使用：
+对于 Agent、脚本或 CI，discovery 应服务于下一步决策，而不是每次任务都全量枚举。使用最小必要集合：
 
-1. `md2wechat capabilities --json`
-2. `md2wechat providers list --json`
-3. `md2wechat themes list --json`
-4. `md2wechat prompts list --json`
-5. 需要具体模板时再用 `show` / `render`
+- 版本、能力或行为不确定：`md2wechat version --json`、`md2wechat capabilities --json`
+- API、草稿、上传或配置 readiness：`md2wechat doctor --json`，必要时再 `md2wechat config show --format json`
+- 文章排版且用户未指定主题或模块：`md2wechat themes list --json`、`md2wechat layout list --json`
+- 已指定某个资源：使用对应的 `providers show`、`themes show`、`prompts show` 或 `layout show`
+- 图片生成或图片 prompt 选择：`md2wechat providers list --json`、`md2wechat prompts list --kind image --json`
+- 简单本地操作，例如 `preview`、`humanize` 或用户已给完整命令和 flags：不要运行无关的 catalog discovery
 
 ## 能力总览
 
@@ -28,6 +29,34 @@ md2wechat capabilities --json
 - 当前可枚举的图片 provider
 - 当前可枚举的 theme
 - 当前可枚举的 prompt catalog
+- `layout` catalog 是否可用、模块数量、schema version、是否仅 API 模式渲染
+
+示例片段：
+
+```json
+{
+  "layout": {
+    "available": true,
+    "module_count": 43,
+    "supports_validate": true,
+    "api_mode_only": true,
+    "schema_version": "1"
+  },
+  "commands": ["convert", "inspect", "preview", "layout", "themes"]
+}
+```
+
+未出现在 `commands` 中的命令不应被 Agent 当成可执行能力。未来工作流不通过 `capabilities` 预告。
+
+## 本地体检
+
+```bash
+md2wechat doctor --json
+```
+
+`doctor` 是本地只读诊断命令。它检查配置能否加载、默认转换模式、API key 是否存在、默认主题是否兼容当前模式、layout catalog 是否可用、WeChat 草稿凭证是否存在。
+
+它不会调用远程 API，不会验证 live auth，不会上传图片，也不会创建草稿。JSON 输出中的 `live` 固定为 `false`，`readiness.format_api` / `readiness.advanced_layout` / `readiness.draft` 用来帮助 Agent 判断下一步能不能执行 API 转换、高级排版渲染或草稿创建。
 
 ## 确认层命令
 
@@ -94,6 +123,24 @@ md2wechat themes show autumn-warm --json
 4. 内置 theme 资产
 
 这意味着纯二进制安装也能列出官方默认主题，用户和平台仍可通过目录覆盖内置主题。
+
+`themes list --json` 和 `themes show --json` 返回的是稳定 view，而不是内部 Go struct。关键字段包括：
+
+- `name`
+- `type`: `api` 或 `ai`
+- `selectable`: 是否可被 `convert --theme` 直接选择
+- `api_theme`: API 服务实际使用的主题名
+- `style`: Agent 选主题时可参考的风格元数据
+- `metadata_incomplete`: 主题缺少稳定风格字段时为 `true`
+
+Collection descriptor 也会出现在发现结果里。例如 `api-collection` 用于描述 API 主题集合，但它不是可执行主题，所以 `selectable: false`。Agent 必须选择 `selectable: true` 且 `type` 匹配当前模式的主题。
+
+`convert` 现在会 fail closed：
+
+- `--mode api` 不能选择 AI 主题；
+- `--mode ai` 不能选择 API 主题；
+- `selectable: false` 的主题不能用于转换；
+- `--mode ai --custom-prompt` 是例外路径，custom prompt 本身就是排版提示词来源，不要求主题匹配。
 
 ## Prompt Catalog
 
@@ -225,9 +272,9 @@ Prompt catalog 的加载优先级为：
 
 后续扩展更多封面、信息图、配图 archetype 时，应优先新增 `prompts/image/*.yaml`，而不是直接把大段提示词写进 Go 代码。
 
-## Layout Module Discovery (:::block Syntax)
+## Layout Module Discovery (:::module Syntax)
 
-The `layout` subcommand exposes the built-in catalog of 43 advanced WeChat layout modules (:::block syntax) for AI agents.
+The `layout` subcommand exposes the built-in catalog of 43 advanced WeChat layout modules (`:::module` syntax) for AI agents.
 
 ### Commands
 
@@ -243,16 +290,20 @@ md2wechat layout list --tag brand --json
 # Show full spec (fields, serves, when_to_use, example, metadata)
 md2wechat layout show hero --json
 
-# Render a :::block from structured vars
+# Render a :::module block from structured vars
 md2wechat layout render hero \
   --var eyebrow=深度观察 \
   --var title="公众号排版的真问题" \
   --json
 
-# Validate :::block usage in a Markdown file
+# Validate :::module usage in a Markdown file
 md2wechat layout validate --file article.md --json
 md2wechat layout validate --stdin --json < article.md
 ```
+
+`layout list --json` 会在模块摘要中显示 `body_format`；`layout show --json` 会在完整规格中显示同一字段。它是模块正文语法来源：`fields` / `rows` / `json_object` / `json_array`。`example` 只是展示，不应作为推断依据。
+
+When the user says "帮我排版这篇文章" without naming a theme or module, run discovery first, then use `layout list`, `layout show`, and `layout render` as primitives. The CLI does not parse `~/.config/md2wechat/brand.md`; Agents should read Brand Profile themselves and choose the final theme/modules. Keep the source Markdown read-only: create a temporary formatted Markdown artifact, validate it with `layout validate`, then pass that temporary file to `convert`. Saving generated Markdown near the source requires explicit user confirmation.
 
 ### `--serves` Filter Values
 
@@ -296,6 +347,10 @@ To add or override a module, create `<category>/<name>.yaml` in any override dir
 - 当前默认 provider 是什么
 - 当前 provider 是否已配置
 - 当前是否存在某个 theme / prompt
+- 当前 theme 是否可直接选择，是否匹配 `api` / `ai` 模式
+- 高级排版模块 catalog 是否可用
+- 每个高级排版模块的 `body_format`，即正文应写成 `fields` / `rows` / `json_object` / `json_array`
+- 尚未发布的工作流是否只是声明为 `available: false`
 
 配置主路径仍然是：
 

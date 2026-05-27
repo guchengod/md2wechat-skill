@@ -493,6 +493,69 @@ func TestRunConvertPassesResolvedMetadataIntoAIRequest(t *testing.T) {
 	}
 }
 
+func TestRunConvertAICustomPromptAllowsDefaultTheme(t *testing.T) {
+	oldCfg, oldLog := cfg, log
+	oldMode, oldTheme, oldAPIKey := convertMode, convertTheme, convertAPIKey
+	oldFontSize, oldBackground := convertFontSize, convertBackgroundType
+	oldCustomPrompt, oldOutput := convertCustomPrompt, convertOutput
+	oldPreview, oldUpload, oldDraft := convertPreview, convertUpload, convertDraft
+	oldSaveDraft, oldCover, oldCoverMediaID := convertSaveDraft, convertCoverImage, convertCoverMediaID
+	oldNewConverter := newMarkdownConverter
+	oldJSON := jsonOutput
+	t.Cleanup(func() {
+		cfg, log = oldCfg, oldLog
+		convertMode, convertTheme, convertAPIKey = oldMode, oldTheme, oldAPIKey
+		convertFontSize, convertBackgroundType = oldFontSize, oldBackground
+		convertCustomPrompt, convertOutput = oldCustomPrompt, oldOutput
+		convertPreview, convertUpload, convertDraft = oldPreview, oldUpload, oldDraft
+		convertSaveDraft, convertCoverImage, convertCoverMediaID = oldSaveDraft, oldCover, oldCoverMediaID
+		newMarkdownConverter = oldNewConverter
+		jsonOutput = oldJSON
+	})
+
+	cfg = &config.Config{}
+	log = zap.NewNop()
+	jsonOutput = true
+	convertMode = "ai"
+	convertTheme = "default"
+	convertAPIKey = ""
+	convertFontSize = "medium"
+	convertBackgroundType = "default"
+	convertCustomPrompt = "Use a compact editorial layout."
+	convertOutput = ""
+	convertPreview = false
+	convertUpload = false
+	convertDraft = false
+	convertSaveDraft = ""
+	convertCoverImage = ""
+	convertCoverMediaID = ""
+	newMarkdownConverter = func() converter.Converter {
+		return converter.NewConverter(cfg, log)
+	}
+
+	markdownPath := filepath.Join(t.TempDir(), "article.md")
+	if err := os.WriteFile(markdownPath, []byte("# Title\n\nBody"), 0600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	stdout := captureStdout(t, func() {
+		if err := runConvert(nil, []string{markdownPath}); err != nil {
+			t.Fatalf("runConvert() error = %v", err)
+		}
+	})
+
+	var response map[string]any
+	if err := json.Unmarshal(stdout, &response); err != nil {
+		t.Fatalf("unmarshal response: %v\n%s", err, stdout)
+	}
+	if response["success"] != true || response["code"] != codeConvertAIRequestReady {
+		t.Fatalf("unexpected response: %#v", response)
+	}
+	if response["code"] == "THEME_MODE_MISMATCH" {
+		t.Fatalf("custom prompt should not fail theme compatibility: %#v", response)
+	}
+}
+
 func TestRunConvertStripsFrontMatterBeforeCallingConverter(t *testing.T) {
 	oldCfg, oldLog := cfg, log
 	oldMode, oldTheme, oldAPIKey := convertMode, convertTheme, convertAPIKey
@@ -966,6 +1029,74 @@ func TestRunConvertOutputsStableJSONEnvelopeWhenRequested(t *testing.T) {
 	data, _ := response["data"].(map[string]any)
 	if data["html"] != "<p>正文</p>" || data["mode"] != "api" || data["title"] != "标题" {
 		t.Fatalf("unexpected data payload: %#v", data)
+	}
+}
+
+func TestRunConvertJSONRejectsThemeModeMismatch(t *testing.T) {
+	oldCfg, oldLog := cfg, log
+	oldMode, oldTheme, oldAPIKey := convertMode, convertTheme, convertAPIKey
+	oldFontSize, oldBackground := convertFontSize, convertBackgroundType
+	oldCustomPrompt, oldOutput := convertCustomPrompt, convertOutput
+	oldPreview, oldUpload, oldDraft := convertPreview, convertUpload, convertDraft
+	oldSaveDraft, oldCover, oldCoverMediaID := convertSaveDraft, convertCoverImage, convertCoverMediaID
+	oldJSON := jsonOutput
+	oldExit := exitFunc
+	t.Cleanup(func() {
+		cfg, log = oldCfg, oldLog
+		convertMode, convertTheme, convertAPIKey = oldMode, oldTheme, oldAPIKey
+		convertFontSize, convertBackgroundType = oldFontSize, oldBackground
+		convertCustomPrompt, convertOutput = oldCustomPrompt, oldOutput
+		convertPreview, convertUpload, convertDraft = oldPreview, oldUpload, oldDraft
+		convertSaveDraft, convertCoverImage, convertCoverMediaID = oldSaveDraft, oldCover, oldCoverMediaID
+		jsonOutput = oldJSON
+		exitFunc = oldExit
+	})
+
+	cfg = &config.Config{MD2WechatAPIKey: "api-key"}
+	log = zap.NewNop()
+	jsonOutput = true
+	exitFunc = func(code int) {}
+	convertMode = "api"
+	convertTheme = "autumn-warm"
+	convertAPIKey = "key"
+	convertFontSize = "medium"
+	convertBackgroundType = "default"
+	convertCustomPrompt = ""
+	convertOutput = ""
+	convertPreview = false
+	convertUpload = false
+	convertDraft = false
+	convertSaveDraft = ""
+	convertCoverImage = ""
+	convertCoverMediaID = ""
+
+	markdownPath := filepath.Join(t.TempDir(), "article.md")
+	if err := os.WriteFile(markdownPath, []byte("# Title\n\nBody"), 0600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	err := runConvert(nil, []string{markdownPath})
+	if err == nil {
+		t.Fatal("expected runConvert to fail")
+	}
+
+	stdout := captureStdout(t, func() {
+		responseError(err)
+	})
+
+	var response map[string]any
+	if err := json.Unmarshal(stdout, &response); err != nil {
+		t.Fatalf("unmarshal response: %v\n%s", err, stdout)
+	}
+	if response["success"] != false || response["code"] != "THEME_MODE_MISMATCH" {
+		t.Fatalf("unexpected response: %#v", response)
+	}
+	errorDetails, _ := response["error_details"].(map[string]any)
+	if errorDetails["theme"] != "autumn-warm" || errorDetails["mode"] != "api" {
+		t.Fatalf("unexpected error details: %#v", response["error_details"])
+	}
+	if _, ok := response["next_actions"].([]any); !ok {
+		t.Fatalf("missing next actions: %#v", response)
 	}
 }
 
