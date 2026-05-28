@@ -28,13 +28,13 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果你已经有稳定可用的 Go 环境，也可以把第一步改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.1
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.4.0
 ```
 
 如果以上都不适合，再改成固定版本安装脚本：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
@@ -112,7 +112,7 @@ md2wechat convert article.md --title "新标题" --author "作者名" --digest "
 ### 确认层命令
 
 ```bash
-# 输出最终标题、作者、摘要来源与 readiness
+# 输出最终标题、作者、摘要来源与结构化 readiness
 md2wechat inspect article.md --json
 
 # 生成本地预览 HTML 文件

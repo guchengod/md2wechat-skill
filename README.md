@@ -122,7 +122,7 @@ md2wechat convert article.md --draft --cover cover.jpg
 
 | 命令 | 说明 |
 |------|------|
-| `inspect` | 解析文章元数据与发布 readiness，确认层，推荐 `convert` 前先跑 |
+| `inspect` | 解析文章元数据与发布就绪状态；`--json` 在 `data.readiness.targets/blockers` 输出可执行目标状态 |
 | `preview` | 生成本地预览 HTML，不触发任何上传或草稿副作用 |
 | `convert` | Markdown → 微信格式 HTML，可选 `--draft` 直接推送草稿 |
 | `write` | 风格写作，从一个想法生成完整文章 + 封面提示词 |
@@ -221,7 +221,7 @@ md2wechat layout validate --file article.md --json
 ```bash
 md2wechat themes list --json               # 排版选主题时使用，按 selectable/type 判断能否用于当前模式
 md2wechat layout list --json               # 高级排版选模块时使用
-md2wechat doctor --json                    # API、草稿、上传或配置 readiness 排障时使用
+md2wechat doctor --json                    # API、草稿、上传或配置本地可尝试性排障时使用
 md2wechat prompts list --kind image --json # 图片 prompt 选择时使用
 md2wechat providers list --json            # 图片生成 provider 选择时使用
 md2wechat capabilities --json              # 版本、命令能力或行为边界不确定时使用
@@ -273,7 +273,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 
 ```
 "把 article.md 转换为微信格式，用 elegant-gold 主题，生成封面图，推送到草稿箱"
-"帮我检查这篇文章的发布 readiness，然后预览一下排版效果"
+"帮我用 inspect --json 检查 data.readiness.targets/blockers，然后预览一下排版效果"
 ```
 
 ### 支持的平台
@@ -289,7 +289,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 OpenClaw 用户可以通过 ClawHub 直接安装：[clawhub.ai/geekjourneyx/md2wechat](https://clawhub.ai/geekjourneyx/md2wechat)
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install-openclaw.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install-openclaw.sh | bash
 ```
 
 ---

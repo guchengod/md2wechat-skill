@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-05-28
+
+### Added
+- Extended `inspect --json` with `data.readiness.schema_version`, `data.readiness.targets`, and `data.readiness.blockers` so Agents can decide whether `preview`, `convert`, `upload`, or `draft` is ready, blocked, degraded, or not requested.
+- Added blocker-to-target mapping for publish checks such as `MISSING_API_KEY`, `LOCAL_IMAGE_MISSING`, and `MISSING_COVER`.
+- Added CLI contract tests for the new `inspect --json` readiness target/blocker projection.
+
+### Changed
+- Kept existing readiness booleans (`convert_ready`, `upload_ready`, `draft_ready`, `preview_fidelity`) in place while documenting `targets/blockers` as the preferred Agent decision surface.
+- Calibrated README, Agent guide, discovery docs, FAQ, quickstart, smoke docs, usage docs, and both skill entry points around the single `data.readiness` contract.
+- Clarified that `doctor --json` readiness is local configuration attemptability, while `inspect --json` readiness is single-article target state.
+- Updated inspect and preview command help from generic readiness wording to target-state wording.
+
+### Migration Guide
+No migration required. Existing `data.readiness.convert_ready`, `upload_ready`, `draft_ready`, and `preview_fidelity` fields remain available. New Agents should prefer `data.readiness.targets` and `data.readiness.blockers` for execution decisions.
+
 ## [2.3.1] - 2026-05-28
 
 ### Added

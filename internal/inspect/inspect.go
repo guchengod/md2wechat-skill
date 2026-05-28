@@ -19,6 +19,12 @@ const (
 
 	PreviewFidelityExact    = "exact"
 	PreviewFidelityDegraded = "degraded"
+
+	ReadinessSchemaVersion      = "v1"
+	ReadinessTargetReady        = "ready"
+	ReadinessTargetBlocked      = "blocked"
+	ReadinessTargetDegraded     = "degraded"
+	ReadinessTargetNotRequested = "not_requested"
 )
 
 type Input struct {
@@ -106,10 +112,13 @@ type AssetState struct {
 }
 
 type Readiness struct {
-	ConvertReady    bool   `json:"convert_ready"`
-	UploadReady     bool   `json:"upload_ready"`
-	DraftReady      bool   `json:"draft_ready"`
-	PreviewFidelity string `json:"preview_fidelity"`
+	ConvertReady    bool               `json:"convert_ready"`
+	UploadReady     bool               `json:"upload_ready"`
+	DraftReady      bool               `json:"draft_ready"`
+	PreviewFidelity string             `json:"preview_fidelity"`
+	SchemaVersion   string             `json:"schema_version"`
+	Targets         ReadinessTargets   `json:"targets"`
+	Blockers        []ReadinessBlocker `json:"blockers"`
 }
 
 type Check struct {
@@ -118,6 +127,22 @@ type Check struct {
 	Message      string `json:"message"`
 	Field        string `json:"field,omitempty"`
 	SuggestedFix string `json:"suggested_fix,omitempty"`
+}
+
+type ReadinessTargets struct {
+	Preview string `json:"preview"`
+	Convert string `json:"convert"`
+	Upload  string `json:"upload"`
+	Draft   string `json:"draft"`
+}
+
+type ReadinessBlocker struct {
+	Code         string   `json:"code"`
+	Field        string   `json:"field,omitempty"`
+	Level        string   `json:"level"`
+	Message      string   `json:"message"`
+	Blocks       []string `json:"blocks"`
+	SuggestedFix string   `json:"suggested_fix,omitempty"`
 }
 
 func Run(input *Input) (*Result, error) {
@@ -172,6 +197,9 @@ func Run(input *Input) (*Result, error) {
 	result.Readiness.ConvertReady = convertReadyFor(mode, input.Config) && !hasBlockingCheck(result.Checks, blocksConvert)
 	result.Readiness.UploadReady = uploadReadyFor(input.Config) && result.Readiness.ConvertReady && !hasBlockingCheck(result.Checks, blocksUpload)
 	result.Readiness.DraftReady = result.Readiness.UploadReady && coverConfigured(input) && !hasBlockingCheck(result.Checks, blocksDraft)
+	result.Readiness.SchemaVersion = ReadinessSchemaVersion
+	result.Readiness.Targets = buildReadinessTargets(result)
+	result.Readiness.Blockers = buildReadinessBlockers(result.Checks)
 	return result, nil
 }
 
@@ -501,6 +529,71 @@ func blocksDraft(code string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func buildReadinessTargets(result *Result) ReadinessTargets {
+	return ReadinessTargets{
+		Preview: previewReadinessTarget(result.Readiness.PreviewFidelity),
+		Convert: readyReadinessTarget(result.Readiness.ConvertReady),
+		Upload:  requestedReadinessTarget(result.Context.Upload || result.Context.Draft, result.Readiness.UploadReady),
+		Draft:   requestedReadinessTarget(result.Context.Draft, result.Readiness.DraftReady),
+	}
+}
+
+func readyReadinessTarget(ready bool) string {
+	if ready {
+		return ReadinessTargetReady
+	}
+	return ReadinessTargetBlocked
+}
+
+func requestedReadinessTarget(requested, ready bool) string {
+	if !requested {
+		return ReadinessTargetNotRequested
+	}
+	return readyReadinessTarget(ready)
+}
+
+func previewReadinessTarget(fidelity string) string {
+	if fidelity == PreviewFidelityExact {
+		return ReadinessTargetReady
+	}
+	return ReadinessTargetDegraded
+}
+
+func buildReadinessBlockers(checks []Check) []ReadinessBlocker {
+	blockers := make([]ReadinessBlocker, 0)
+	for _, check := range checks {
+		if check.Level != LevelError {
+			continue
+		}
+		blocks := blockedReadinessTargets(check.Code)
+		if len(blocks) == 0 {
+			continue
+		}
+		blockers = append(blockers, ReadinessBlocker{
+			Code:         check.Code,
+			Field:        check.Field,
+			Level:        check.Level,
+			Message:      check.Message,
+			Blocks:       blocks,
+			SuggestedFix: check.SuggestedFix,
+		})
+	}
+	return blockers
+}
+
+func blockedReadinessTargets(code string) []string {
+	switch {
+	case blocksConvert(code):
+		return []string{"convert", "upload", "draft"}
+	case blocksUpload(code):
+		return []string{"upload", "draft"}
+	case blocksDraft(code):
+		return []string{"draft"}
+	default:
+		return nil
 	}
 }
 

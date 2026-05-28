@@ -349,6 +349,100 @@ func TestInspectCommandStrictExitsWithCodeTwoWhenErrorsExist(t *testing.T) {
 	}
 }
 
+func TestInspectCommandJSONIncludesReadinessBlockerMapping(t *testing.T) {
+	oldCfg, oldJSON, oldStrict := cfg, jsonOutput, inspectStrict
+	oldExit := exitFunc
+	oldMode, oldTheme := inspectMode, inspectTheme
+	oldFont, oldBackground := inspectFontSize, inspectBackgroundType
+	oldTitle, oldAuthor, oldDigest := inspectTitle, inspectAuthor, inspectDigest
+	oldCover, oldCoverMediaID := inspectCover, inspectCoverMediaID
+	oldUpload, oldDraft := inspectUpload, inspectDraft
+	t.Cleanup(func() {
+		cfg, jsonOutput, inspectStrict = oldCfg, oldJSON, oldStrict
+		exitFunc = oldExit
+		inspectMode, inspectTheme = oldMode, oldTheme
+		inspectFontSize, inspectBackgroundType = oldFont, oldBackground
+		inspectTitle, inspectAuthor, inspectDigest = oldTitle, oldAuthor, oldDigest
+		inspectCover, inspectCoverMediaID = oldCover, oldCoverMediaID
+		inspectUpload, inspectDraft = oldUpload, oldDraft
+	})
+
+	cfg = &config.Config{
+		MD2WechatAPIKey: "api-key",
+		WechatAppID:     "appid",
+		WechatSecret:    "secret",
+	}
+	jsonOutput = true
+	inspectStrict = false
+	inspectMode = "api"
+	inspectTheme = "default"
+	inspectFontSize = "medium"
+	inspectBackgroundType = "none"
+	inspectTitle = ""
+	inspectAuthor = ""
+	inspectDigest = ""
+	inspectCover = ""
+	inspectCoverMediaID = ""
+	inspectUpload = false
+	inspectDraft = true
+	exitFunc = func(code int) {
+		t.Fatalf("unexpected exitFunc(%d)", code)
+	}
+
+	markdownPath := filepath.Join(t.TempDir(), "article.md")
+	if err := os.WriteFile(markdownPath, []byte("# 标题\n\n正文"), 0600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	stdout := captureStdout(t, func() {
+		if err := inspectCmd.RunE(inspectCmd, []string{markdownPath}); err != nil {
+			t.Fatalf("RunE() error = %v", err)
+		}
+	})
+
+	var response struct {
+		Code   string `json:"code"`
+		Status string `json:"status"`
+		Data   struct {
+			Readiness struct {
+				SchemaVersion string `json:"schema_version"`
+				Targets       struct {
+					Draft string `json:"draft"`
+				} `json:"targets"`
+				Blockers []struct {
+					Code   string   `json:"code"`
+					Blocks []string `json:"blocks"`
+				} `json:"blockers"`
+			} `json:"readiness"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(stdout, &response); err != nil {
+		t.Fatalf("unmarshal response: %v\n%s", err, stdout)
+	}
+	if response.Code != codeInspectCompleted {
+		t.Fatalf("code = %q", response.Code)
+	}
+	if response.Status != "completed" {
+		t.Fatalf("status = %q", response.Status)
+	}
+	if response.Data.Readiness.SchemaVersion != "v1" {
+		t.Fatalf("readiness.schema_version = %q", response.Data.Readiness.SchemaVersion)
+	}
+	if response.Data.Readiness.Targets.Draft != "blocked" {
+		t.Fatalf("readiness.targets.draft = %q", response.Data.Readiness.Targets.Draft)
+	}
+
+	for _, blocker := range response.Data.Readiness.Blockers {
+		if blocker.Code == "MISSING_COVER" {
+			if len(blocker.Blocks) != 1 || blocker.Blocks[0] != "draft" {
+				t.Fatalf("MISSING_COVER blocks = %#v", blocker.Blocks)
+			}
+			return
+		}
+	}
+	t.Fatalf("MISSING_COVER blocker not found: %#v", response.Data.Readiness.Blockers)
+}
+
 func TestInspectCommandStrictDoesNotExitTwoForWarnOnlyChecks(t *testing.T) {
 	oldCfg, oldJSON, oldStrict := cfg, jsonOutput, inspectStrict
 	oldExit := exitFunc
@@ -604,7 +698,7 @@ func TestRunInspectUsesCoverMediaIDForDraftReadiness(t *testing.T) {
 		t.Fatalf("runInspect() error = %v", err)
 	}
 	if !result.Readiness.DraftReady {
-		t.Fatalf("draft readiness = %#v", result.Readiness)
+		t.Fatalf("draft target state = %#v", result.Readiness)
 	}
 	if hasErrorCheck(result.Checks) {
 		t.Fatalf("checks = %#v", result.Checks)

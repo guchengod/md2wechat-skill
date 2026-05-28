@@ -44,7 +44,7 @@ md2wechat preview article.md --json
 
 结果：
 
-- `inspect` 能返回最终 title / author / digest 来源、readiness、checks
+- `inspect` 能返回最终 title / author / digest 来源、`data.readiness`、`data.checks`；`data.readiness.targets/blockers` 能表达目标是否 blocked 以及对应原因
 - 真实验证到 `TITLE_BODY_MISMATCH`、`DIGEST_METADATA_ONLY`、`IMAGE_REPLACEMENT_REQUIRES_UPLOAD_OR_DRAFT`
 - `preview` 能在可渲染时返回 exact preview，在 AI 或受限上下文下诚实 degraded
 
@@ -236,6 +236,7 @@ unsupported file type
 
 - stdout 只输出 JSON
 - 结构化输出不再混入配置 banner
+- `inspect --json` 的 Agent 决策字段位于 `data.readiness.targets/blockers`
 
 这让 Agent / 脚本可以直接解析 stdout，而不用先清洗杂音。
 

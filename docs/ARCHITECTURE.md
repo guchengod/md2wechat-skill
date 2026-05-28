@@ -50,7 +50,7 @@ md2wechat-skill 的核心目标不是“把 Markdown 变好看”，而是把文
 
 - resolved metadata 计算
 - metadata source 标注
-- readiness 计算
+- readiness 计算（旧布尔字段 + targets/blockers 结构化投影）
 - publish risk / semantic checks
 
 ### `internal/preview`
@@ -93,7 +93,7 @@ md2wechat-skill 的核心目标不是“把 Markdown 变好看”，而是把文
 
 1. `inspect` 读取 Markdown 与配置
 2. 解析 metadata、正文结构、资产和上下文
-3. 输出 resolved metadata、source、readiness、checks
+3. 输出 resolved metadata、source、readiness（含 targets/blockers）、checks
 4. `preview` 复用 inspect 结果，尽量生成 exact HTML；做不到时明确 degraded
 
 这里最重要的约束是：
@@ -137,7 +137,7 @@ metadata 解析顺序：
 3. CLI JSON envelope
    - 统一 `success / code / message / schema_version / status / retryable / data / error`
 4. `internal/inspect`
-   - 统一 resolved metadata / source / readiness / checks
+   - 统一 resolved metadata / source / readiness（含 targets/blockers 投影）/ checks
 5. `AssetPipeline`
    - 统一图片上传、生成、下载、回填
 

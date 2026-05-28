@@ -1,8 +1,10 @@
 package inspect
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -135,6 +137,134 @@ func TestRunMarksLocalImageExists(t *testing.T) {
 	}
 	if result.Readiness.PreviewFidelity != PreviewFidelityDegraded {
 		t.Fatalf("preview_fidelity = %q", result.Readiness.PreviewFidelity)
+	}
+}
+
+func TestRunIncludesReadinessTargets(t *testing.T) {
+	result, err := Run(&Input{
+		MarkdownFile: filepath.Join(t.TempDir(), "article.md"),
+		Markdown:     "# 标题\n",
+		Mode:         "api",
+		Config:       &config.Config{MD2WechatAPIKey: "api-key"},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	readiness := result.Readiness
+	if readiness.SchemaVersion != ReadinessSchemaVersion {
+		t.Fatalf("schema_version = %q", readiness.SchemaVersion)
+	}
+	if readiness.Targets.Preview != ReadinessTargetReady {
+		t.Fatalf("preview target = %q", readiness.Targets.Preview)
+	}
+	if readiness.Targets.Convert != ReadinessTargetReady {
+		t.Fatalf("convert target = %q", readiness.Targets.Convert)
+	}
+	if readiness.Targets.Upload != ReadinessTargetNotRequested {
+		t.Fatalf("upload target = %q", readiness.Targets.Upload)
+	}
+	if readiness.Targets.Draft != ReadinessTargetNotRequested {
+		t.Fatalf("draft target = %q", readiness.Targets.Draft)
+	}
+	if len(readiness.Blockers) != 0 {
+		t.Fatalf("blockers = %#v", readiness.Blockers)
+	}
+	if readiness.Blockers == nil {
+		t.Fatal("blockers should be an empty array, not nil")
+	}
+
+	payload, err := json.Marshal(readiness)
+	if err != nil {
+		t.Fatalf("marshal readiness: %v", err)
+	}
+	if !strings.Contains(string(payload), `"blockers":[]`) {
+		t.Fatalf("readiness JSON should include stable empty blockers array: %s", payload)
+	}
+}
+
+func TestBlockedReadinessTargetsContract(t *testing.T) {
+	cases := []struct {
+		code string
+		want []string
+	}{
+		{code: "TITLE_TOO_LONG", want: []string{"convert", "upload", "draft"}},
+		{code: "AUTHOR_TOO_LONG", want: []string{"convert", "upload", "draft"}},
+		{code: "DIGEST_TOO_LONG", want: []string{"convert", "upload", "draft"}},
+		{code: "MISSING_API_KEY", want: []string{"convert", "upload", "draft"}},
+		{code: "LOCAL_IMAGE_MISSING", want: []string{"upload", "draft"}},
+		{code: "MISSING_WECHAT_CONFIG", want: []string{"upload", "draft"}},
+		{code: "MISSING_COVER", want: []string{"draft"}},
+		{code: "COVER_IMAGE_MISSING", want: []string{"draft"}},
+		{code: "CONFLICTING_COVER_INPUTS", want: []string{"draft"}},
+		{code: "COVER_MEDIA_ID_INVALID", want: []string{"draft"}},
+		{code: "DUPLICATE_H1"},
+		{code: "DIGEST_METADATA_ONLY"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.code, func(t *testing.T) {
+			if got := blockedReadinessTargets(tc.code); !slices.Equal(got, tc.want) {
+				t.Fatalf("blockedReadinessTargets(%q) = %#v, want %#v", tc.code, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunMapsReadinessBlockersToTargets(t *testing.T) {
+	result, err := Run(&Input{
+		MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
+		Markdown:       "# 标题\n",
+		Mode:           "api",
+		DraftRequested: true,
+		Config: &config.Config{
+			MD2WechatAPIKey: "api-key",
+			WechatAppID:     "appid",
+			WechatSecret:    "secret",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if result.Readiness.Targets.Draft != ReadinessTargetBlocked {
+		t.Fatalf("draft target = %q", result.Readiness.Targets.Draft)
+	}
+	if result.Readiness.Targets.Upload != ReadinessTargetReady {
+		t.Fatalf("upload target = %q", result.Readiness.Targets.Upload)
+	}
+	blocker, ok := findReadinessBlocker(result.Readiness.Blockers, "MISSING_COVER")
+	if !ok {
+		t.Fatalf("missing MISSING_COVER blocker in %#v", result.Readiness.Blockers)
+	}
+	if !slices.Equal(blocker.Blocks, []string{"draft"}) {
+		t.Fatalf("MISSING_COVER blocks = %#v", blocker.Blocks)
+	}
+	if blocker.SuggestedFix == "" {
+		t.Fatal("MISSING_COVER suggested_fix is empty")
+	}
+}
+
+func TestBuildReadinessDoesNotMirrorNonErrorChecks(t *testing.T) {
+	blockers := buildReadinessBlockers([]Check{
+		{
+			Level:        LevelWarn,
+			Code:         "DUPLICATE_H1",
+			Message:      "Body H1 matches the final article title",
+			Field:        "title",
+			SuggestedFix: "remove the body H1 or change the final title",
+		},
+		{
+			Level:        LevelInfo,
+			Code:         "DIGEST_METADATA_ONLY",
+			Message:      "Digest affects draft metadata, not body HTML rendering",
+			Field:        "digest",
+			SuggestedFix: "use body content or theme behavior to control visible article summary inside the HTML",
+		},
+	})
+
+	if len(blockers) != 0 {
+		t.Fatalf("blockers = %#v", blockers)
 	}
 }
 
@@ -411,7 +541,7 @@ func TestRunMakesReadinessFalseForBlockingChecks(t *testing.T) {
 		}
 	})
 
-	t.Run("cover path errors block draft readiness", func(t *testing.T) {
+	t.Run("cover path errors block draft target state", func(t *testing.T) {
 		result, err := Run(&Input{
 			MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
 			Markdown:       "# 标题\n",
@@ -457,7 +587,7 @@ func TestRunMakesReadinessFalseForBlockingChecks(t *testing.T) {
 		}
 	})
 
-	t.Run("conflicting cover inputs block draft readiness", func(t *testing.T) {
+	t.Run("conflicting cover inputs block draft target state", func(t *testing.T) {
 		coverPath := filepath.Join(t.TempDir(), "cover.png")
 		if err := os.WriteFile(coverPath, []byte("cover"), 0600); err != nil {
 			t.Fatalf("WriteFile() error = %v", err)
@@ -483,7 +613,7 @@ func TestRunMakesReadinessFalseForBlockingChecks(t *testing.T) {
 		}
 	})
 
-	t.Run("url-like cover media id blocks draft readiness", func(t *testing.T) {
+	t.Run("url-like cover media id blocks draft target state", func(t *testing.T) {
 		result, err := Run(&Input{
 			MarkdownFile:   filepath.Join(t.TempDir(), "article.md"),
 			Markdown:       "# 标题\n",
@@ -603,4 +733,13 @@ func hasCheckCode(checks []Check, code string) bool {
 		}
 	}
 	return false
+}
+
+func findReadinessBlocker(blockers []ReadinessBlocker, code string) (ReadinessBlocker, bool) {
+	for _, blocker := range blockers {
+		if blocker.Code == code {
+			return blocker, true
+		}
+	}
+	return ReadinessBlocker{}, false
 }

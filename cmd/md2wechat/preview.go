@@ -62,9 +62,9 @@ func init() {
 	previewCmd.Flags().StringVar(&previewTitle, "title", "", "Override article title")
 	previewCmd.Flags().StringVar(&previewAuthor, "author", "", "Override article author")
 	previewCmd.Flags().StringVar(&previewDigest, "digest", "", "Override article digest")
-	previewCmd.Flags().StringVar(&previewCover, "cover", "", "Cover image path to validate draft readiness")
-	previewCmd.Flags().BoolVar(&previewUpload, "upload", false, "Evaluate upload readiness in preview")
-	previewCmd.Flags().BoolVar(&previewDraft, "draft", false, "Evaluate draft readiness in preview")
+	previewCmd.Flags().StringVar(&previewCover, "cover", "", "Cover image path to evaluate draft target state")
+	previewCmd.Flags().BoolVar(&previewUpload, "upload", false, "Evaluate upload target state in preview")
+	previewCmd.Flags().BoolVar(&previewDraft, "draft", false, "Evaluate draft target state in preview")
 	previewCmd.Flags().StringVarP(&previewOutput, "output", "o", "", "Write preview HTML to this file (default: temp file)")
 }
 

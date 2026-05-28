@@ -19,13 +19,13 @@ brew install geekjourneyx/tap/md2wechat
 如果你不用 Homebrew，再执行：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:MD2WECHAT_RELEASE_BASE_URL = "https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1"
+$env:MD2WECHAT_RELEASE_BASE_URL = "https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0"
 iex ((New-Object System.Net.WebClient).DownloadString("$env:MD2WECHAT_RELEASE_BASE_URL/install.ps1"))
 ```
 
@@ -80,7 +80,7 @@ md2wechat convert article.md --preview
 
 建议顺序：
 
-1. 先跑 `inspect`，确认最终标题、摘要、H1 风险和 draft readiness
+1. 先跑 `inspect --json`，确认最终标题、摘要、H1 风险；需要上传或草稿时读取 `data.readiness.targets/blockers`
 2. 再跑 `preview`，拿到本地 HTML 预览文件
 3. 最后再执行 `convert` / `--draft`
 

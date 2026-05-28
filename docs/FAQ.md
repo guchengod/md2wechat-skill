@@ -55,13 +55,13 @@ npm install -g @geekjourneyx/md2wechat
 如果你已经有稳定可用的 Go 环境，也可以：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.1
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.4.0
 ```
 
 如果以上都不适合，再走固定版本安装脚本：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 ```
 
 安装脚本默认会把 CLI 放到：
@@ -149,13 +149,13 @@ npm install -g @geekjourneyx/md2wechat
 如果你已经有 Go 环境，再把第一步改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.1
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.4.0
 ```
 
 如果以上都不适合，再把第一步改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 ```
 
 如果你懒得自己操作，也可以直接把下面的话发给 Claude Code / Codex / OpenCode：
@@ -164,8 +164,8 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 请先安装 md2wechat CLI，再安装 md2wechat skill，并验证版本和能力发现都正常。
 执行：
 1. 如果我是 mac 用户，先运行：brew install geekjourneyx/tap/md2wechat
-2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.1
-3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+2. 如果我已经有稳定可用的 Go 环境，也可以改成：go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.4.0
+3. 如果以上两种都不适合，再运行：curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 4. 运行：npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 5. 如果我是通过 install.sh 安装的，再执行：export PATH="$HOME/.local/bin:$PATH"
 6. md2wechat version --json
@@ -179,7 +179,7 @@ curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.
 ```text
 请帮我安装 OpenClaw 版 md2wechat，并验证 skill 和 CLI 都可用。
 执行：
-1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install-openclaw.sh | bash
+1. curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install-openclaw.sh | bash
 2. 先执行：export PATH="$HOME/.local/bin:$PATH"
 3. md2wechat version --json
 4. md2wechat config init
@@ -209,7 +209,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果你已经有 Go 环境，再改成：
 
 ```bash
-go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.3.1
+go install github.com/geekjourneyx/md2wechat-skill/cmd/md2wechat@v2.4.0
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 ```
@@ -217,7 +217,7 @@ npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
 如果以上都不适合，再改成：
 
 ```bash
-curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.3.1/install.sh | bash
+curl -fsSL https://github.com/geekjourneyx/md2wechat-skill/releases/download/v2.4.0/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 md2wechat version --json
 npx skills add https://github.com/geekjourneyx/md2wechat-skill --skill md2wechat
@@ -583,7 +583,7 @@ md2wechat preview article.md
 
 区别是：
 
-- `inspect`：解释系统最终会怎么理解你的文章，包括标题/作者/摘要来源、H1 风险、`upload/draft` readiness。
+- `inspect`：解释系统最终会怎么理解你的文章，包括标题/作者/摘要来源、H1 风险；`--json` 会在 `data.readiness.targets/blockers` 输出机器可读的 `upload/draft` 目标状态和 blocker 映射。
 - `preview`：生成一个本地 HTML 预览文件，用来确认当前上下文下能否拿到可信预览。
 
 第一版 `preview` 不是可编辑工作台，也不会触发上传、草稿或写回 Markdown。
@@ -793,7 +793,7 @@ md2wechat themes list --json
 md2wechat doctor --json
 ```
 
-`doctor` 不调用远程 API，不验证 live auth，不上传图片，也不创建草稿。它只报告本地配置、默认 API 转换 readiness、默认主题、layout catalog 和 WeChat 草稿凭证是否就绪。
+`doctor` 不调用远程 API，不验证 live auth，不上传图片，也不创建草稿。它只通过 `data.readiness.format_api` / `data.readiness.advanced_layout` / `data.readiness.draft` 报告本地配置、默认 API 转换、默认主题、layout catalog 和 WeChat 草稿凭证是否具备可尝试性。
 
 ---
 

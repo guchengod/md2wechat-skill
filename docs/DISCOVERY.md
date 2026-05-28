@@ -56,7 +56,9 @@ md2wechat doctor --json
 
 `doctor` 是本地只读诊断命令。它检查配置能否加载、默认转换模式、API key 是否存在、默认主题是否兼容当前模式、layout catalog 是否可用、WeChat 草稿凭证是否存在。
 
-它不会调用远程 API，不会验证 live auth，不会上传图片，也不会创建草稿。JSON 输出中的 `live` 固定为 `false`，`readiness.format_api` / `readiness.advanced_layout` / `readiness.draft` 用来帮助 Agent 判断下一步能不能执行 API 转换、高级排版渲染或草稿创建。
+它不会调用远程 API，不会验证 live auth，不会上传图片，也不会创建草稿。JSON 输出中的 `data.live` 固定为 `false`，`data.readiness.format_api` / `data.readiness.advanced_layout` / `data.readiness.draft` 用来帮助 Agent 判断下一步能不能执行 API 转换、高级排版渲染或草稿创建。
+
+注意：`doctor` 的 `data.readiness.*` 是本地配置可尝试性；`inspect` 的 `data.readiness.targets/blockers` 是单篇文章的执行目标状态。
 
 ## 确认层命令
 
@@ -69,7 +71,8 @@ md2wechat preview article.md --json
 
 其中：
 
-- `inspect` 用来确认最终标题、作者、摘要来源，以及 `upload/draft` readiness。
+- `inspect` 用来确认最终标题、作者、摘要来源，以及 `data.readiness.targets/blockers` 中的 `upload/draft` 目标状态。
+- `inspect --json` 的 `data.readiness.targets` 和 `data.readiness.blockers` 会把 `checks` 投影为机器可读的执行目标状态和 blocker 映射。
 - `inspect` 的 `checks` 会直接暴露语义边界，例如 `TITLE_BODY_MISMATCH`、`DIGEST_METADATA_ONLY`、`IMAGE_REPLACEMENT_REQUIRES_UPLOAD_OR_DRAFT`。
 - `preview` 第一版会生成本地 HTML 预览文件；`--json` 返回输出路径和 render metadata。
 - `preview --mode ai` 不会声称展示最终视觉稿，只会明确降级为确认页。

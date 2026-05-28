@@ -56,10 +56,10 @@ func init() {
 	inspectCmd.Flags().StringVar(&inspectTitle, "title", "", "Override article title")
 	inspectCmd.Flags().StringVar(&inspectAuthor, "author", "", "Override article author")
 	inspectCmd.Flags().StringVar(&inspectDigest, "digest", "", "Override article digest")
-	inspectCmd.Flags().StringVar(&inspectCover, "cover", "", "Cover image path to validate draft readiness")
-	inspectCmd.Flags().StringVar(&inspectCoverMediaID, "cover-media-id", "", "Existing WeChat cover media_id to validate draft readiness")
-	inspectCmd.Flags().BoolVar(&inspectUpload, "upload", false, "Evaluate upload readiness")
-	inspectCmd.Flags().BoolVar(&inspectDraft, "draft", false, "Evaluate draft readiness")
+	inspectCmd.Flags().StringVar(&inspectCover, "cover", "", "Cover image path to evaluate draft target state")
+	inspectCmd.Flags().StringVar(&inspectCoverMediaID, "cover-media-id", "", "Existing WeChat cover media_id to evaluate draft target state")
+	inspectCmd.Flags().BoolVar(&inspectUpload, "upload", false, "Evaluate upload target state")
+	inspectCmd.Flags().BoolVar(&inspectDraft, "draft", false, "Evaluate draft target state")
 	inspectCmd.Flags().BoolVar(&inspectStrict, "strict", false, "Exit with status 2 if error-level checks are found")
 }
 
